@@ -1,0 +1,198 @@
+import React from 'react';
+import { View, Text, StyleSheet, ScrollView, SafeAreaView, TouchableOpacity } from 'react-native';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { useAuth } from '../contexts/AuthContext';
+
+const ProfileScreen = ({ navigation }) => {
+  const { user } = useAuth();
+
+  if (!user) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <Text style={styles.loadingText}>Đang tải thông tin người dùng...</Text>
+      </SafeAreaView>
+    );
+  }
+
+  // Default values if data is not yet set in user profile
+  const cigarettesAvoided = user.cigarettesAvoided || 0;
+  const moneySaved = user.moneySaved || 0;
+
+  // Helper to format date for display
+  const formattedBirthDate = user.birth_date ? new Date(user.birth_date).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' }) : 'Chưa cập nhật';
+
+  const renderInfoRow = (iconName, label, value) => (
+    <View style={styles.infoRow}>
+      <Ionicons name={iconName} size={20} color="#4ECB71" style={styles.infoIcon} />
+      <Text style={styles.infoLabel}>{label}:</Text>
+      <Text style={styles.infoValue}>{value}</Text>
+    </View>
+  );
+
+  return (
+    <SafeAreaView style={styles.safeArea}>
+      <ScrollView contentContainerStyle={styles.scrollContainer}>
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => navigation.navigate('Main', { screen: 'HomeTab' })} style={styles.backButtonContainer}>
+            <Ionicons name="arrow-back-outline" size={28} color="#2C3E50" />
+          </TouchableOpacity>
+          <View style={styles.headerTitleWrapper}>
+            <Text style={styles.title}>Hồ sơ của tôi</Text>
+          </View>
+          <View style={styles.headerRightSpacer} />
+        </View>
+
+        <View style={styles.card}>
+          <View style={styles.cardHeaderWithEdit}>
+            <Text style={styles.cardTitle}>Thông tin cá nhân</Text>
+            <TouchableOpacity onPress={() => navigation.navigate('UserDetailScreen', { fromProfileEdit: true })}>
+              <MaterialCommunityIcons name="pencil-outline" size={22} color="#4ECB71" />
+            </TouchableOpacity>
+          </View>
+          {renderInfoRow("person-outline", "Họ và tên", user.fullName || 'Chưa cập nhật')}
+          {renderInfoRow("mail-outline", "Email", user.email || 'Chưa cập nhật')}
+          {renderInfoRow("calendar-outline", "Ngày sinh", formattedBirthDate)}
+          {renderInfoRow("body-outline", "Giới tính", user.gender || 'Chưa cập nhật')}
+        </View>
+
+        <View style={styles.card}>
+          <View style={styles.cardHeaderWithEdit}>
+            <Text style={styles.cardTitle}>Tiến độ bỏ thuốc</Text>
+            <TouchableOpacity onPress={() => navigation.navigate('SmokingStatus')}>
+              <MaterialCommunityIcons name="pencil-outline" size={22} color="#4ECB71" />
+            </TouchableOpacity>
+          </View>
+          {renderInfoRow("flame-outline", "Số điếu thuốc tránh được", `${cigarettesAvoided} điếu`)}
+          {renderInfoRow("wallet-outline", "Tiền tiết kiệm được", `${moneySaved.toLocaleString()} VND`)}
+          {/* Additional smoking details from UserDetailScreen if needed */}
+          {renderInfoRow("timer-outline", "Số năm hút thuốc", user.smokingYears ? `${user.smokingYears} năm` : 'Chưa cập nhật')}
+          {renderInfoRow("analytics-outline", "Số điếu mỗi ngày trước đây", user.cigarettesPerDay ? `${user.cigarettesPerDay} điếu` : 'Chưa cập nhật')}
+          {renderInfoRow("cash-outline", "Giá 1 bao thuốc trước đây", user.pricePerPack ? `${user.pricePerPack.toLocaleString()} VND` : 'Chưa cập nhật')}
+        </View>
+
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}>Gói thành viên</Text>
+          {renderInfoRow("star-outline", "Trạng thái gói", user.membershipStatus?.package_name ? `${user.membershipStatus.package_name.toUpperCase()}` : 'Chưa có gói')}
+          {user.membershipStatus?.end_date && renderInfoRow("calendar-sharp", "Ngày hết hạn", new Date(user.membershipStatus.end_date).toLocaleDateString())}
+          <TouchableOpacity style={styles.membershipButton} onPress={() => navigation.navigate('MembershipPackage')}>
+            <Text style={styles.membershipButtonText}>Xem/Nâng cấp gói</Text>
+          </TouchableOpacity>
+        </View>
+
+      </ScrollView>
+    </SafeAreaView>
+  );
+};
+
+const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: '#F7F9FC',
+  },
+  scrollContainer: {
+    padding: 20,
+    paddingBottom: 40,
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 30,
+  },
+  title: {
+    textAlign:'center',
+    fontSize: 28,
+    marginLeft:'30',
+    fontWeight: '800',
+    color: '#2C3E50',
+  },
+  loadingText: {
+    flex: 1,
+    textAlign: 'center',
+    textAlignVertical: 'center',
+    fontSize: 18,
+    color: '#555',
+  },
+  card: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 20,
+    marginBottom: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    elevation: 5,
+    borderWidth: 1,
+    borderColor: '#E9ECEF',
+  },
+  cardTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#34495E',
+    marginBottom: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F0F2F5',
+    paddingBottom: 10,
+  },
+  infoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  infoIcon: {
+    marginRight: 10,
+    width: 24,
+    textAlign: 'center',
+  },
+  infoLabel: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#555',
+    flex: 1,
+  },
+  infoValue: {
+    fontSize: 16,
+    color: '#2C3E50',
+    fontWeight: '500',
+    flex: 2,
+    textAlign: 'right',
+  },
+  membershipButton: {
+    backgroundColor: '#228BE6',
+    paddingVertical: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+    marginTop: 15,
+    shadowColor: '#228BE6',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  membershipButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  cardHeaderWithEdit: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  backButtonContainer: {
+    padding: 10,
+    marginRight: 10,
+    zIndex: 1,
+  },
+  headerTitleWrapper: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  headerRightSpacer: {
+    width: 48,
+  },
+});
+
+export default ProfileScreen;
