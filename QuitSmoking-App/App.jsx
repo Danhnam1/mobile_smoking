@@ -15,7 +15,11 @@ import UserDetailScreen from './src/screens/UserDetailScreen';
 import ProgressSummary from './src/screens/ProgressSummary';
 import MembershipPackageScreen from './src/screens/MembershipPackageScreen';
 import ProfileScreen from './src/screens/ProfileScreen';
+import SettingsScreen from './src/screens/SettingsScreen';
+import QuitPlanScreen from './src/screens/QuitPlanScreen';
 import { AuthProvider, useAuth } from './src/contexts/AuthContext';
+import QuitStage from './src/screens/QuitStage';
+import { AiOutlineSchedule } from 'react-icons/ai';
 
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
@@ -33,22 +37,22 @@ function MainTabNavigator() {
 
           if (route.name === 'HomeTab') {
             iconName = 'home';
+            return <Ionicons name={iconName} size={size} color={color} />;
           } else if (route.name === 'TrackProgressTab') {
             iconName = 'progress-check';
-            return <MaterialCommunityIcons name={iconName} size={size} color={color} />;
+            return <AiOutlineSchedule name={iconName} size={size} color={color} />;
+          } else if (route.name === 'QuitStage') {
+            return <MaterialCommunityIcons name="calendar-clock-outline" size={size} color={color} />;
           } else if (route.name === 'CommunityTab') {
             iconName = 'people-outline';
             return <Ionicons name={iconName} size={size} color={color} />;
-          } else if (route.name === 'ProfileTab') {
-            iconName = 'person-circle-outline';
-            return <Ionicons name={iconName} size={size} color={color} />;
-          }
+          } 
           return <Ionicons name={iconName} size={size} color={color} />;
         },
       })}
     >
       <Tab.Screen name="HomeTab" component={Home} options={{ title: 'Home' }} />
-      <Tab.Screen name="TrackProgressTab" component={TrackProgress} options={{ title: 'Progress' }} />
+      <Tab.Screen name="QuitStage" component={QuitStage} options={{ title: 'Quit Stage' }} />
       <Tab.Screen name="CommunityTab" component={Community} options={{ title: 'Community' }} />
       {/* <Tab.Screen name="ProfileTab" component={ProfileScreen} options={{ title: 'Profile' }} /> */}
     </Tab.Navigator>
@@ -70,13 +74,7 @@ function Navigation() {
   let initialRouteName = "Welcome"; // Default for not logged in
 
   if (user) {
-    if (!isProfileComplete) {
-      initialRouteName = "UserDetailScreen"; // Start profile setup flow
-    } else if (!membershipStatus) {
-      initialRouteName = "MembershipPackage"; // Prompt for membership selection
-    } else {
-      initialRouteName = "Main"; // Go to main app if profile complete and has membership
-    }
+    initialRouteName = "Main"; // Luôn vào Home tab sau khi đăng nhập
   }
 
   return (
@@ -93,6 +91,10 @@ function Navigation() {
       <Stack.Screen name="SmokingStatus" component={SmokingStatus} />
       <Stack.Screen name="ProgressSummary" component={ProgressSummary} />
       <Stack.Screen name="MembershipPackage" component={MembershipPackageScreen} />
+      <Stack.Screen name="SettingsScreen" component={SettingsScreen} />
+      <Stack.Screen name="QuitPlanScreen" component={QuitPlanScreen} />
+      <Stack.Screen name="QuitStage" component={QuitStage} />
+
     </Stack.Navigator>
   );
 }

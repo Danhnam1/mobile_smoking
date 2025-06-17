@@ -1,9 +1,11 @@
 import { StatusBar } from 'expo-status-bar';
 import { StyleSheet, Text, View, SafeAreaView, ScrollView, TouchableOpacity, Button } from 'react-native';
 import { AntDesign, FontAwesome, MaterialCommunityIcons, Ionicons } from '@expo/vector-icons';
-import { useNavigation } from '@react-navigation/native';
-import { useEffect, useState } from 'react';
-import { getAllBadges, fetchUserProgress, fetchSmokingStatus, fetchQuitPlan } from '../api';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import { useEffect, useState, useCallback } from 'react';
+import { getAllBadges } from '../api';
+import { getQuitPlanSummary, fetchQuitPlan } from '../api/quitPlan';
+import { fetchUserProgress, fetchSmokingStatus } from '../api';
 import { getProgressByStage, getTotalCigarettesInPeriod, getTotalMoneySpentInPeriod } from '../api/progressTracking';
 import AppHeader from '../components/AppHeader';
 import HomeHeaderAndProgressCard from '../components/HomeHeaderAndProgressCard';
@@ -25,80 +27,70 @@ export default function Home() {
 
   const { user, token } = useAuth();
 
-  useEffect(() => {
-    console.log('Home.jsx useEffect: User data:', user);
-    console.log('Home.jsx useEffect: User token:', token);
+  const loadData = useCallback(async () => {
+    try {
+      // Fetch achievements first (usually not dependent on login status)
+      const badgesData = await getAllBadges();
+      setAchievements(badgesData.badges);
 
-    const loadData = async () => {
-      try {
-        // Fetch achievements first (usually not dependent on login status)
-        const badgesData = await getAllBadges();
-        setAchievements(badgesData.badges);
+      // Fetch progress data ONLY if user ID and token are available from AuthContext
+      if (user && token) {
+        // Lấy thông tin hút thuốc trước khi cai
+        const preStatus = await fetchSmokingStatus(token);
+        const avgCigPerDay = preStatus?.cigarette_count || 0;
 
-        // Fetch progress data ONLY if user ID and token are available from AuthContext
-        if (user && token) {
-          // Fetch the user's quit plan to get planId and potentially stageId
-          const quitPlan = await fetchQuitPlan(user._id, token);
-          console.log('Fetched Quit Plan:', quitPlan); // Log the quitPlan to inspect its structure
+        // Fetch the user's quit plan to get planId
+        const quitPlan = await fetchQuitPlan(user._id, token);
+        console.log('quitPlan:', quitPlan);
 
-          let actualPlanId = null;
-          let actualStageId = null;
-
-          if (quitPlan) {
-            actualPlanId = quitPlan._id; // Assuming _id of the plan is the planId
-            // TODO: Determine the actual stageId based on the 'Fetched Quit Plan' log.
-            // It might be quitPlan.currentStageId, quitPlan.activeStage._id, or similar.
-            actualStageId = quitPlan.currentStage?._id || quitPlan.activeStage?._id || quitPlan.stages?.[0]?._id || 'default_stage_id'; // **ADJUST THIS LINE BASED ON YOUR ACTUAL quitPlan STRUCTURE**
-            // If quitPlan does not contain stageId, you might need another API call here.
-
-            const endDate = new Date();
-            const startDate = new Date();
-            startDate.setDate(startDate.getDate() - 30);
-
-            const [progressRecords, totalCigarettes, totalMoneySpent] = await Promise.all([
-              getProgressByStage(actualPlanId, actualStageId, token),
-              getTotalCigarettesInPeriod(actualPlanId, actualStageId, startDate, endDate, token),
-              getTotalMoneySpentInPeriod(actualPlanId, actualStageId, startDate, endDate, token)
-            ]);
-
-            const firstRecord = progressRecords[0];
-            const daysQuit = firstRecord ? Math.floor((new Date() - new Date(firstRecord.date)) / (1000 * 60 * 60 * 24)) : 0;
-            const cigarettesAvoided = totalCigarettes.total || 0;
-            const moneySaved = totalMoneySpent.total || 0;
-
-            setProgressData({
-              daysQuit,
-              cigarettesAvoided,
-              moneySaved
-            });
-          } else {
-            console.log('No quit plan found for the user. Progress data will be 0.');
-            setProgressData({
-              daysQuit: 0,
-              cigarettesAvoided: 0,
-              moneySaved: 0
-            });
-          }
+        if (quitPlan) {
+          const summary = await getQuitPlanSummary(quitPlan._id, token);
+          console.log('Summary API response:', summary);
+          const daysQuit = summary.progress_days || 0;
+          const totalCigarettesSmoked = summary.total_cigarettes || 0;
+          // Tính số thuốc đã tránh được
+          let cigarettesAvoided = (daysQuit * avgCigPerDay) - totalCigarettesSmoked;
+          if (cigarettesAvoided < 0) cigarettesAvoided = 0;
+          setProgressData({
+            daysQuit,
+            cigarettesAvoided,
+            moneySaved: summary.total_money_spent || 0
+          });
         } else {
-          console.log('Skipping progress data fetch as user is not logged in or token is missing.');
           setProgressData({
             daysQuit: 0,
             cigarettesAvoided: 0,
             moneySaved: 0
           });
         }
-
-        setLoadingBadges(false);
-      } catch (error) {
-        console.error('Error loading data:', error);
-        setBadgesError('Failed to load data (badges or progress). Please check your connection and login status.');
-        setLoadingBadges(false);
+      } else {
+        console.log('Skipping progress data fetch as user is not logged in or token is missing.');
+        setProgressData({
+          daysQuit: 0,
+          cigarettesAvoided: 0,
+          moneySaved: 0
+        });
       }
-    };
 
-    // Trigger loadData when user or token from AuthContext changes
-    loadData();
+      setLoadingBadges(false);
+    } catch (error) {
+      console.error('Error loading data:', error);
+      setBadgesError('Failed to load data (badges or progress). Please check your connection and login status.');
+      setLoadingBadges(false);
+    }
   }, [user, token]);
+
+  // Load data when component mounts
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
+
+  // Reload data when screen is focused
+  useFocusEffect(
+    useCallback(() => {
+      loadData();
+    }, [loadData])
+  );
 
   // Helper functions to calculate progress metrics
   const calculateDaysQuit = (progressData) => {
@@ -187,6 +179,20 @@ export default function Home() {
           </View>
         </View>
 
+        {/* QuitPlan Section */}
+        <TouchableOpacity style={styles.sectionContainer} onPress={() => navigation.navigate('QuitPlanScreen')}>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>Quit Plan</Text>
+          </View>
+          <View style={[styles.card, styles.quitPlanCard]}>
+            <Ionicons name="calendar-outline" size={60} color="#4CAF50" style={styles.rocketIcon} />
+            <View style={styles.healthImprovementTextContainer}>
+              <Text style={styles.upgradeTitle}>Your Quit Journey</Text>
+              <Text style={styles.upgradeDescription}>Track your progress and follow your personalized quit plan...</Text>
+            </View>
+          </View>
+        </TouchableOpacity>
+
         <StatusBar style="auto" />
       </ScrollView>
     </SafeAreaView>
@@ -196,140 +202,150 @@ export default function Home() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#F0F2F5',
+    backgroundColor: '#F8F9FA',
   },
   scrollViewContent: {
-    paddingBottom: 20,
+    paddingBottom: 30,
   },
   sectionContainer: {
     backgroundColor: '#fff',
-    marginTop: 10,
-    paddingVertical: 15,
+    marginTop: 15,
+    paddingVertical: 20,
     paddingHorizontal: 20,
-    borderRadius: 10,
-    marginHorizontal: 10,
+    borderRadius: 16,
+    marginHorizontal: 15,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
+    shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
+    shadowRadius: 8,
+    elevation: 4,
   },
   sectionHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 15,
+    marginBottom: 20,
   },
   sectionTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#333',
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#1A1A1A',
+    letterSpacing: 0.3,
   },
   seeAllText: {
     color: '#4CAF50',
-    fontSize: 14,
-    fontWeight: '500',
+    fontSize: 15,
+    fontWeight: '600',
   },
   card: {
     backgroundColor: '#fff',
-    borderRadius: 10,
-    padding: 15,
-    marginBottom: 10,
+    borderRadius: 16,
+    padding: 20,
+    marginBottom: 15,
     flexDirection: 'row',
     alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
   },
   communityImage: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    marginRight: 15,
+    width: 65,
+    height: 65,
+    borderRadius: 32.5,
+    marginRight: 18,
   },
   communityImagePlaceholder: {
-    backgroundColor: '#ccc',
+    backgroundColor: '#E8F5E9',
     justifyContent: 'center',
     alignItems: 'center',
   },
   communityUsername: {
-    fontWeight: 'bold',
-    fontSize: 16,
-    marginBottom: 5,
+    fontWeight: '700',
+    fontSize: 17,
+    marginBottom: 6,
+    color: '#1A1A1A',
   },
   communityMessage: {
-    fontSize: 14,
-    color: '#555',
+    fontSize: 15,
+    color: '#666',
+    lineHeight: 20,
   },
   achievementsScroll: {
     paddingHorizontal: 0,
-    paddingVertical: 5,
+    paddingVertical: 8,
   },
   achievementCard: {
-    width: 150,
-    marginRight: 10,
-    backgroundColor: '#F9F9F9',
-    borderRadius: 10,
-    padding: 10,
+    width: 160,
+    marginRight: 15,
+    backgroundColor: '#F8F9FA',
+    borderRadius: 16,
+    padding: 15,
     alignItems: 'center',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
     elevation: 2,
   },
   achievementTitle: {
-    fontWeight: 'bold',
-    fontSize: 14,
+    fontWeight: '700',
+    fontSize: 15,
     textAlign: 'center',
-    marginTop: 10,
-    marginBottom: 5,
+    marginTop: 12,
+    marginBottom: 6,
+    color: '#1A1A1A',
   },
   achievementDescription: {
-    fontSize: 12,
-    color: '#555',
+    fontSize: 13,
+    color: '#666',
     textAlign: 'center',
+    lineHeight: 18,
   },
   healthImprovementCard: {
     backgroundColor: '#E8F5E9',
-    padding: 20,
+    padding: 25,
+    borderRadius: 16,
   },
   rocketIcon: {
-    marginRight: 20,
+    marginRight: 25,
   },
   healthImprovementTextContainer: {
     flex: 1,
   },
   upgradeTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#4CAF50',
-    marginBottom: 5,
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#2E7D32',
+    marginBottom: 8,
   },
   upgradeDescription: {
-    fontSize: 14,
-    color: '#555',
+    fontSize: 15,
+    color: '#1B5E20',
+    lineHeight: 22,
   },
-  linkText: {
-    color: '#4ECB71',
-    fontSize: 16,
-    fontWeight: '600',
-    textDecorationLine: 'underline',
-    textAlign: 'center',
+  quitPlanCard: {
+    backgroundColor: '#E3F2FD',
+    padding: 25,
+    borderRadius: 16,
   },
   loadingText: {
     fontSize: 16,
     color: '#666',
     textAlign: 'center',
-    paddingVertical: 10,
+    paddingVertical: 15,
   },
   errorText: {
     fontSize: 16,
-    color: 'red',
+    color: '#D32F2F',
     textAlign: 'center',
-    paddingVertical: 10,
+    paddingVertical: 15,
   },
   noBadgesText: {
     fontSize: 16,
     color: '#666',
     textAlign: 'center',
-    paddingVertical: 10,
-  }
+    paddingVertical: 15,
+  },
 });

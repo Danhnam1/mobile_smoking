@@ -1,16 +1,35 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { MaterialCommunityIcons, MaterialIcons } from '@expo/vector-icons';
 import { useAuth } from '../contexts/AuthContext';
 
 const ProgressSummary = ({ navigation, route }) => {
-  // Nhận dữ liệu từ route.params
-  const { cigarettesAvoided, moneySaved } = route.params || { cigarettesAvoided: 0, moneySaved: 0 };
-  const { updateUserProfile } = useAuth();
+  const { user, updateUserProfile } = useAuth();
+  const [summaryData, setSummaryData] = useState({
+    cigarettesAvoided: 0,
+    moneySaved: 0
+  });
+
+  useEffect(() => {
+    // Get data from route params first, then fall back to user profile data
+    const routeData = route.params || {};
+    const userData = user || {};
+    
+    setSummaryData({
+      cigarettesAvoided: routeData.cigarettesAvoided || userData.cigarettesAvoided || 0,
+      moneySaved: routeData.moneySaved || userData.moneySaved || 0
+    });
+  }, [route.params, user]);
 
   const handleNext = async () => {
     // Cập nhật trạng thái isProfileComplete thành true
-    await updateUserProfile({ isProfileComplete: true });
+    await updateUserProfile({ 
+      isProfileComplete: true,
+      // Preserve existing data
+      cigarettesAvoided: summaryData.cigarettesAvoided,
+      moneySaved: summaryData.moneySaved,
+      smokingData: user?.smokingData
+    });
     // Điều hướng đến màn hình Hồ sơ
     navigation.navigate('ProfileScreen');
   };
@@ -22,12 +41,12 @@ const ProgressSummary = ({ navigation, route }) => {
       <View style={styles.row}>
         <View style={styles.card}>
           <MaterialCommunityIcons name="fire" size={32} color="#F7B6A3" style={{ marginBottom: 6 }} />
-          <Text style={styles.cardValue}>{cigarettesAvoided}</Text>
+          <Text style={styles.cardValue}>{summaryData.cigarettesAvoided}</Text>
           <Text style={styles.cardLabel}>cigarettes{"\n"}avoided</Text>
         </View>
         <View style={styles.card}>
           <MaterialIcons name="attach-money" size={32} color="#FFD600" style={{ marginBottom: 6 }} />
-          <Text style={styles.cardValue}>{moneySaved.toLocaleString()} đ</Text>
+          <Text style={styles.cardValue}>{Number(summaryData.moneySaved).toLocaleString('vi-VN', { maximumFractionDigits: 0 })} đ</Text>
           <Text style={styles.cardLabel}>money{"\n"}saved</Text>
         </View>
       </View>

@@ -24,9 +24,16 @@ export const fetchUser = async (userId) => {
 // Fetches smoking status/progress data for a user
 // This endpoint needs to be clarified as it's not explicitly in the provided docs.
 // It's assumed to provide overall progress like cigarette_count, money_spent, health_note.
-export const fetchSmokingStatus = async (userId) => {
+export const fetchSmokingStatus = async (token) => {
   try {
-    const response = await fetch(`${API_BASE_URL}/smoking-status/user/${userId}`);
+    const headers = {};
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+
+    const response = await fetch(`${API_BASE_URL}/smoking-status/pre-plan/latest`, {
+      headers: headers,
+    });
     if (!response.ok) {
       throw new Error('Failed to fetch smoking status');
     }
@@ -71,7 +78,10 @@ export const fetchQuitPlan = async (userId, token) => {
     }
     // Assuming the API returns an array of plans, and we want the active one or the first one
     const plans = await response.json();
-    return plans.length > 0 ? plans[0] : null; // Return the first plan or null
+
+    // Find the active (ongoing) plan
+    const activePlan = plans.find(plan => plan.status === 'ongoing');
+    return activePlan || null; // Return the active plan or null
   } catch (error) {
     console.error(`Error fetching quit plan for user ${userId}:`, error);
     throw error;
@@ -324,4 +334,28 @@ export const getAllBadges = async () => {
     console.error('Error fetching all badges:', error);
     throw error;
   }
-}; 
+};
+
+export const createQuitPlan = async (planData, token) => {
+  try {
+    const headers = {
+      'Content-Type': 'application/json',
+    };
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+    const response = await fetch(`${API_BASE_URL}/quit-plans`, {
+      method: 'POST',
+      headers: headers,
+      body: JSON.stringify(planData),
+    });
+    if (!response.ok) {
+      const err = await response.json();
+      throw new Error(err.message || 'Tạo kế hoạch bỏ thuốc thất bại!');
+    }
+    return await response.json();
+  } catch (error) {
+    console.error('Error creating quit plan:', error);
+    throw error;
+  }
+};

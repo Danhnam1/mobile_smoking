@@ -1,6 +1,6 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { updateUser } from '../api'; // Import updateUser API
+import { updateUser, fetchSmokingStatus } from '../api'; // Import fetchSmokingStatus API
 
 const AuthContext = createContext();
 
@@ -11,95 +11,170 @@ export const AuthProvider = ({ children }) => {
   const [isProfileComplete, setIsProfileComplete] = useState(false);
   const [membershipStatus, setMembershipStatus] = useState(null);
 
-  // To force login every time, we will not load user data from storage.
-  // Instead, we immediately set loading to false and ensure no user data is present initially.
+  // Load user data from storage when app starts
   useEffect(() => {
-    setLoading(false); // Immediately set loading to false
+    const loadUserData = async () => {
+      try {
+        const storedUser = await AsyncStorage.getItem('user');
+        const storedToken = await AsyncStorage.getItem('token');
+        
+        if (storedUser && storedToken) {
+          let userData = JSON.parse(storedUser);
+          
+          // Fetch smoking status data and merge it
+          if (userData._id && storedToken) {
+            try {
+              const smokingStatus = await fetchSmokingStatus(storedToken);
+              console.log('Fetched smoking status on app start:', smokingStatus);
+              if (smokingStatus) {
+                const latestSmokingData = smokingStatus; // Assuming smokingStatus itself is the latest record
+
+                const moneySavedPerDay = (Number(latestSmokingData.price_per_pack) * Number(latestSmokingData.packs_per_week)) / 7;
+                const calculatedMoneySaved = moneySavedPerDay * 30; // Calculate for 30 days
+                const calculatedCigarettesAvoided = Number(latestSmokingData.cigarette_count) * 30;
+
+                userData = {
+                  ...userData,
+                  cigarettesAvoided: calculatedCigarettesAvoided,
+                  moneySaved: calculatedMoneySaved,
+                  smokingData: {
+                    cigaretteCount: latestSmokingData.cigarette_count,
+                    suctionFrequency: latestSmokingData.suction_frequency,
+                    pricePerPack: latestSmokingData.price_per_pack,
+                    packsPerWeek: latestSmokingData.packs_per_week,
+                    healthNote: latestSmokingData.health_note,
+                    lastUpdated: latestSmokingData.record_date // Using record_date as lastUpdated
+                  }
+                };
+                // Update AsyncStorage with the merged user data
+                await AsyncStorage.setItem('user', JSON.stringify(userData));
+              }
+            } catch (smokingError) {
+              console.warn('Could not fetch smoking status:', smokingError.message);
+              // Continue loading user data even if smoking status fails
+            }
+          }
+
+          setUser(userData);
+          setToken(storedToken);
+          setIsProfileComplete(userData.isProfileComplete || false);
+          setMembershipStatus(userData.membership || null);
+        }
+      } catch (error) {
+        console.error('Error loading user data:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadUserData();
   }, []);
 
-  const loadUserData = async () => {
-    // We are no longer loading from AsyncStorage to force login every time
-    // Forcing initial state to be unauthenticated
-    setUser(null);
-    setToken(null);
-    setIsProfileComplete(false);
-    setMembershipStatus(null);
-    setLoading(false);
-  };
-
-  // Save user data to context only, not to storage
+  // Save user data to storage and context
   const saveUserData = async (userData, userToken) => {
     try {
-      // await AsyncStorage.setItem('user', JSON.stringify(userData)); // Removed saving to storage
-      // await AsyncStorage.setItem('token', userToken); // Removed saving to storage
+      // Fetch smoking status data and merge it *after* setting initial user data
+      if (userData._id && userToken) {
+        try {
+          const smokingStatus = await fetchSmokingStatus(userToken);
+          console.log('Fetched smoking status after login:', smokingStatus);
+          if (smokingStatus) {
+            const latestSmokingData = smokingStatus;
+
+            const moneySavedPerDay = (Number(latestSmokingData.price_per_pack) * Number(latestSmokingData.packs_per_week)) / 7;
+            const calculatedMoneySaved = moneySavedPerDay * 30;
+            const calculatedCigarettesAvoided = Number(latestSmokingData.cigarette_count) * 30;
+
+            userData = {
+              ...userData,
+              cigarettesAvoided: calculatedCigarettesAvoided,
+              moneySaved: calculatedMoneySaved,
+              smokingData: {
+                cigaretteCount: latestSmokingData.cigarette_count,
+                suctionFrequency: latestSmokingData.suction_frequency,
+                pricePerPack: latestSmokingData.price_per_pack,
+                packsPerWeek: latestSmokingData.packs_per_week,
+                healthNote: latestSmokingData.health_note,
+                lastUpdated: latestSmokingData.record_date
+              }
+            };
+          }
+        } catch (smokingError) {
+          console.warn('Could not fetch smoking status after login:', smokingError.message);
+        }
+      }
+
+      await AsyncStorage.setItem('user', JSON.stringify(userData));
+      await AsyncStorage.setItem('token', userToken);
       setUser(userData);
       setToken(userToken);
       setMembershipStatus(userData.membership || null);
-      // After successful login, if user data is complete, set profile complete flag
       if (userData.isProfileComplete) {
-          setIsProfileComplete(true);
+        setIsProfileComplete(true);
       }
     } catch (error) {
-      console.error('Error saving user data (in-memory only):', error);
+      console.error('Error saving user data:', error);
       throw error;
     }
   };
 
-  // Update user profile in context and storage
+  // Update user profile in context, storage and backend
   const updateUserProfile = async (updatedData) => {
     try {
       if (!user || !token) {
         throw new Error('User or token not available for profile update.');
       }
 
-      // Prepare data for backend (convert to snake_case if necessary for backend expectations)
-      const dataToSend = {
-        full_name: updatedData.fullName, // Map fullName to full_name
-        birth_date: updatedData.dateOfBirth, // Map dateOfBirth to birth_date
-        gender: updatedData.gender, // Map gender to gender
-        // Only include fields that the backend's updateCurrentUser expects
-      };
+      // Send only direct user profile fields to the main updateUser endpoint
+      const userProfileUpdates = {};
+      if (updatedData.fullName) userProfileUpdates.full_name = updatedData.fullName;
+      if (updatedData.dateOfBirth) userProfileUpdates.birth_date = updatedData.dateOfBirth;
+      if (updatedData.gender) userProfileUpdates.gender = updatedData.gender;
+      if (typeof updatedData.isProfileComplete !== 'undefined') userProfileUpdates.isProfileComplete = updatedData.isProfileComplete;
 
-      // Send update to the backend
-      const response = await updateUser(dataToSend, token);
+      // Update backend only for fields directly on the user model
+      if (Object.keys(userProfileUpdates).length > 0) {
+        await updateUser(userProfileUpdates, token);
+      }
 
-      // Update local state with the response from the backend or the merged data
+      // Local state and AsyncStorage update (including smokingData if present in updatedData)
       const newUserData = { ...user, ...updatedData };
+      await AsyncStorage.setItem('user', JSON.stringify(newUserData));
       setUser(newUserData);
-      // Explicitly update isProfileComplete if it's in updatedData
+
       if (typeof updatedData.isProfileComplete !== 'undefined') {
         setIsProfileComplete(updatedData.isProfileComplete);
       }
     } catch (error) {
-      console.error('Error updating user profile:', error); // Changed log message
+      console.error('Error updating user profile:', error);
       throw error;
     }
   };
 
-  // Update membership status in context only, not to storage
+  // Update membership status in context and storage
   const updateMembershipStatus = async (membershipData) => {
     try {
       const newUserData = { ...user, membership: membershipData };
-      // await AsyncStorage.setItem('user', JSON.stringify(newUserData)); // Removed saving to storage
+      await AsyncStorage.setItem('user', JSON.stringify(newUserData));
       setUser(newUserData);
       setMembershipStatus(membershipData);
     } catch (error) {
-      console.error('Error updating membership status (in-memory only):', error);
+      console.error('Error updating membership status:', error);
       throw error;
     }
   };
 
-  // Logout: Clear in-memory state
+  // Logout: Clear storage and context
   const logout = async () => {
     try {
-      // await AsyncStorage.removeItem('user'); // Removed removing from storage
-      // await AsyncStorage.removeItem('token'); // Removed removing from storage
+      await AsyncStorage.removeItem('user');
+      await AsyncStorage.removeItem('token');
       setUser(null);
       setToken(null);
       setIsProfileComplete(false);
       setMembershipStatus(null);
     } catch (error) {
-      console.error('Error during logout (in-memory only):', error);
+      console.error('Error during logout:', error);
       throw error;
     }
   };

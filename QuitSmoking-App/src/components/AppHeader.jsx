@@ -1,17 +1,49 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
+import { useAuth } from '../contexts/AuthContext';
 
 const AppHeader = () => {
   const navigation = useNavigation();
+  const { logout } = useAuth();
+
+  const handleLogout = async () => {
+    Alert.alert(
+      'Đăng xuất',
+      'Bạn có chắc chắn muốn đăng xuất?',
+      [
+        {
+          text: 'Hủy',
+          style: 'cancel'
+        },
+        {
+          text: 'Đăng xuất',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await logout();
+              navigation.reset({
+                index: 0,
+                routes: [{ name: 'Welcome' }],
+              });
+            } catch (error) {
+              Alert.alert('Lỗi', 'Không thể đăng xuất. Vui lòng thử lại.');
+            }
+          }
+        }
+      ]
+    );
+  };
 
   return (
     <View style={styles.headerContainer}>
       <Text style={styles.headerTitle}>QUITNOW</Text>
       <View style={styles.iconContainer}>
         <Ionicons name="cloud-upload-outline" size={24} color="#888" style={styles.icon} />
-        <Ionicons name="settings-outline" size={24} color="#888" style={styles.icon} />
+        <TouchableOpacity onPress={() => navigation.navigate('SettingsScreen')}>
+          <Ionicons name="settings-outline" size={24} color="#888" style={styles.icon} />
+        </TouchableOpacity>
         <TouchableOpacity onPress={() => navigation.navigate('ProfileScreen')}>
           <Ionicons name="person-circle-outline" size={24} color="#888" style={styles.icon} />
         </TouchableOpacity>

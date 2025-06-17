@@ -11,7 +11,7 @@ const handleApiError = (error) => {
 // Ghi nhận tiến độ mới
 export const recordProgress = async (planId, stageId, data, token) => {
   try {
-    const endpoint = ENDPOINTS.PROGRESS.BY_STAGE
+    const endpoint = ENDPOINTS.QUITPLANPROGRESS.RECORD_PROGRESS
       .replace(':planId', planId)
       .replace(':stageId', stageId);
 
@@ -39,7 +39,7 @@ export const recordProgress = async (planId, stageId, data, token) => {
 // Lấy tiến độ theo stage
 export const getProgressByStage = async (planId, stageId, token) => {
   try {
-    const endpoint = ENDPOINTS.PROGRESS.BY_STAGE
+    const endpoint = ENDPOINTS.QUITPLANPROGRESS.GET_ALL_PROGRESS
       .replace(':planId', planId)
       .replace(':stageId', stageId);
 
@@ -65,7 +65,7 @@ export const getProgressByStage = async (planId, stageId, token) => {
 // Lấy tổng số điếu thuốc đã hút trong một khoảng thời gian
 export const getTotalCigarettesInPeriod = async (planId, stageId, startDate, endDate, token) => {
   try {
-    const endpoint = ENDPOINTS.PROGRESS.TOTAL
+    const endpoint = ENDPOINTS.QUITPLANPROGRESS.TOTAL_CIGARETTES
       .replace(':planId', planId)
       .replace(':stageId', stageId);
 
@@ -78,6 +78,7 @@ export const getTotalCigarettesInPeriod = async (planId, stageId, startDate, end
         }
       }
     );
+    console.log('getTotalCigarettesInPeriod API raw response:', response);
 
     if (!response.ok) {
       const error = await response.json();
@@ -94,7 +95,7 @@ export const getTotalCigarettesInPeriod = async (planId, stageId, startDate, end
 // Lấy tổng số tiền đã tiêu trong một khoảng thời gian
 export const getTotalMoneySpentInPeriod = async (planId, stageId, startDate, endDate, token) => {
   try {
-    const endpoint = ENDPOINTS.PROGRESS.MONEY
+    const endpoint = ENDPOINTS.QUITPLANPROGRESS.TOTAL_MONEY_SAVED
       .replace(':planId', planId)
       .replace(':stageId', stageId);
 
@@ -107,6 +108,7 @@ export const getTotalMoneySpentInPeriod = async (planId, stageId, startDate, end
         }
       }
     );
+    console.log('getTotalMoneySpentInPeriod API raw response:', response);
 
     if (!response.ok) {
       const error = await response.json();
@@ -123,7 +125,7 @@ export const getTotalMoneySpentInPeriod = async (planId, stageId, startDate, end
 // Lấy thống kê tiến độ theo ngày
 export const getDailyProgressStats = async (planId, stageId, token) => {
   try {
-    const endpoint = ENDPOINTS.PROGRESS.DAILY_STATS
+    const endpoint = ENDPOINTS.QUITPLANPROGRESS.DAILY_STATS
       .replace(':planId', planId)
       .replace(':stageId', stageId);
 

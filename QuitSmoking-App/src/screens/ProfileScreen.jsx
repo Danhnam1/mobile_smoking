@@ -49,7 +49,7 @@ const ProfileScreen = ({ navigation }) => {
               <MaterialCommunityIcons name="pencil-outline" size={22} color="#4ECB71" />
             </TouchableOpacity>
           </View>
-          {renderInfoRow("person-outline", "Họ và tên", user.fullName || 'Chưa cập nhật')}
+          {renderInfoRow("person-outline", "Họ và tên", user.full_name || 'Chưa cập nhật')}
           {renderInfoRow("mail-outline", "Email", user.email || 'Chưa cập nhật')}
           {renderInfoRow("calendar-outline", "Ngày sinh", formattedBirthDate)}
           {renderInfoRow("body-outline", "Giới tính", user.gender || 'Chưa cập nhật')}
@@ -57,17 +57,21 @@ const ProfileScreen = ({ navigation }) => {
 
         <View style={styles.card}>
           <View style={styles.cardHeaderWithEdit}>
-            <Text style={styles.cardTitle}>Tiến độ bỏ thuốc</Text>
+            <Text style={styles.cardTitle}>SmokingStatus</Text>
             <TouchableOpacity onPress={() => navigation.navigate('SmokingStatus')}>
               <MaterialCommunityIcons name="pencil-outline" size={22} color="#4ECB71" />
             </TouchableOpacity>
           </View>
           {renderInfoRow("flame-outline", "Số điếu thuốc tránh được", `${cigarettesAvoided} điếu`)}
-          {renderInfoRow("wallet-outline", "Tiền tiết kiệm được", `${moneySaved.toLocaleString()} VND`)}
-          {/* Additional smoking details from UserDetailScreen if needed */}
-          {renderInfoRow("timer-outline", "Số năm hút thuốc", user.smokingYears ? `${user.smokingYears} năm` : 'Chưa cập nhật')}
-          {renderInfoRow("analytics-outline", "Số điếu mỗi ngày trước đây", user.cigarettesPerDay ? `${user.cigarettesPerDay} điếu` : 'Chưa cập nhật')}
-          {renderInfoRow("cash-outline", "Giá 1 bao thuốc trước đây", user.pricePerPack ? `${user.pricePerPack.toLocaleString()} VND` : 'Chưa cập nhật')}
+          {renderInfoRow("wallet-outline", "Tiền sẽ tiết kiệm được", `${moneySaved.toLocaleString()} VND`)}
+          {renderInfoRow("analytics-outline", "Số điếu mỗi ngày trước đây", user.smokingData?.cigaretteCount ? `${user.smokingData.cigaretteCount} điếu` : 'Chưa cập nhật')}
+          {renderInfoRow("cash-outline", "Giá 1 bao thuốc trước đây", user.smokingData?.pricePerPack ? `${user.smokingData.pricePerPack.toLocaleString()} VND` : 'Chưa cập nhật')}
+          {renderInfoRow("package-variant", "Số gói mỗi tuần", user.smokingData?.packsPerWeek ? `${user.smokingData.packsPerWeek} gói` : 'Chưa cập nhật')}
+          {renderInfoRow("smoking", "Tần suất hút", user.smokingData?.suctionFrequency ? 
+            user.smokingData.suctionFrequency === 'light' ? 'Nhẹ' :
+            user.smokingData.suctionFrequency === 'medium' ? 'Trung bình' : 'Nặng'
+            : 'Chưa cập nhật')}
+          {user.smokingData?.healthNote && renderInfoRow("note-text-outline", "Ghi chú sức khỏe", user.smokingData.healthNote)}
         </View>
 
         <View style={styles.card}>

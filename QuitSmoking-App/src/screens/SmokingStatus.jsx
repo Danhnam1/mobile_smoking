@@ -52,6 +52,14 @@ const SmokingStatus = ({ navigation, route }) => {
             await updateUserProfile({ 
                 cigarettesAvoided, 
                 moneySaved,
+                smokingData: {
+                    cigaretteCount: Number(cigaretteCount),
+                    suctionFrequency,
+                    pricePerPack: Number(pricePerPack),
+                    packsPerWeek: Number(packsPerWeek),
+                    healthNote,
+                    lastUpdated: new Date().toISOString()
+                }
                 // We will set isProfileComplete to true in ProgressSummary to ensure the flow
                 // isProfileComplete: true 
             });

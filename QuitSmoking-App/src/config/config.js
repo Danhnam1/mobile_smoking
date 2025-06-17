@@ -29,17 +29,30 @@ export const ENDPOINTS = {
         UPDATE_PROFILE: '/users/profile',
         CHANGE_PASSWORD: '/users/change-password',
     },
-    PROGRESS: {
-        TRACKING: '/progress-tracking',
-        BY_STAGE: '/progress-tracking/:planId/:stageId',
-        TOTAL: '/progress-tracking/:planId/:stageId/total',
-        MONEY: '/progress-tracking/:planId/:stageId/money',
+    QUITPLAN: {
+        CREATE_QUIT_PLAN: '/quit-plans',
+        GET_QUIT_PLAN_OF_USER: '/quit-plans/user/:id',
+        GET_DETAIL_QUITPLAN_OF_USER: '/quit-plans/:planId',
+        UPDATE_QUITPLAN: '/quit-plans/:planId/status',
+        STAGE_SUGGESTION: '/quit-plans/stage-suggestion',
+        SUMMARY: '/quit-plans/:planId/summary',
+    },
+    QUITPLANPROGRESS: {
+        RECORD_PROGRESS: '/quit-plans/:planId/stages/:stageId/progress',
+        GET_ALL_PROGRESS: '/quit-plans/:planId/stages/:stageId/progress',
+        TOTAL_CIGARETTES: '/progress-tracking/:planId/:stageId/total',
+        TOTAL_MONEY_SAVED: '/progress-tracking/:planId/:stageId/money',
         DAILY_STATS: '/progress-tracking/:planId/:stageId/daily-stats',
     },
-    PLANS: {
-        LIST: '/quit-plans',
-        DETAIL: '/quit-plans/:id',
-        STAGES: '/quit-plans/:id/stages',
+    QUITSTAGE: {
+        GET_ALL_STAGE_OF_QUITPLAN: '/quit-plans/:planId/stages',
+        CREATE_STAGE: '/quit-plans/:planId/stages',
+        UPDATE_STAGE: '/quit-plans/:planId/stages/:stageId',
+        DELETE_STAGE: '/quit-plans/:planId/stages/:stageId',
+    },
+    SMOKINGSTATUS: {
+        RECORD_SMOKING: '/quit-plan/:planId/stages/:stageId/status',
+        GET_ALL_SMOKING: '/quit-plan/:planId/stages/:stageId/status',
     },
     MEMBERSHIP: {
         PACKAGES: '/membership/packages',
