@@ -84,6 +84,9 @@ const QuitStage = ({ navigation, route }) => {
             const stageStart = new Date(stage.start_date);
             stageStart.setHours(0, 0, 0, 0);
 
+            const stageEnd = new Date(stage.end_date);
+            stageEnd.setHours(0, 0, 0, 0);
+
             if (stageStart <= today) {
               try {
                 const res = await getProgressByStage(currentPlanId, stage._id, token);
@@ -238,7 +241,10 @@ const QuitStage = ({ navigation, route }) => {
             today.setHours(0, 0, 0, 0);
 
             const stageStart = new Date(stage.start_date);
+            stageStart.setHours(0, 0, 0, 0);
+
             const stageEnd = new Date(stage.end_date);
+            stageEnd.setHours(0, 0, 0, 0);
 
             const isFutureStage = stageStart > today;
             const isPastStage = stageEnd < today;

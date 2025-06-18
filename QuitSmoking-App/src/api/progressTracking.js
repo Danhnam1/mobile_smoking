@@ -9,7 +9,7 @@ const handleApiError = (error) => {
 };
 
 // Ghi nhận tiến độ mới
-export const recordProgress = async (planId, stageId, data, token) => {
+export const recordProgress = async (planId, stageId, cigarette_count, token) => {
   try {
     const endpoint = ENDPOINTS.QUITPLANPROGRESS.RECORD_PROGRESS
       .replace(':planId', planId)
@@ -21,7 +21,11 @@ export const recordProgress = async (planId, stageId, data, token) => {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${token}`
       },
-      body: JSON.stringify(data)
+      body: JSON.stringify({
+        planId,
+        stageId,
+        cigarette_count,
+      })
     });
 
     if (!response.ok) {
