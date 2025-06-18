@@ -1,4 +1,5 @@
-import { API_URL, ENDPOINTS } from '../config/config';
+import { API_BASE_URL } from './index';
+import { ENDPOINTS } from '../config/config';
 
 // Helper function to handle API errors
 const handleApiError = (error) => {
@@ -8,35 +9,40 @@ const handleApiError = (error) => {
   throw error;
 };
 
+// Helper function to check if response is JSON
+const isJsonResponse = (response) => {
+  const contentType = response.headers.get('content-type');
+  return contentType && contentType.includes('application/json');
+};
+
 // Ghi nhận tiến độ mới
-export const recordProgress = async (planId, stageId, cigarette_count, token) => {
+export const recordProgress = async (planId, stageId, progressData, token) => {
   try {
     const endpoint = ENDPOINTS.QUITPLANPROGRESS.RECORD_PROGRESS
       .replace(':planId', planId)
       .replace(':stageId', stageId);
 
-    const response = await fetch(`${API_URL}${endpoint}`, {
+    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${token}`
       },
-      body: JSON.stringify({
-        planId,
-        stageId,
-        cigarette_count,
-      })
+      body: JSON.stringify(progressData)
     });
 
     if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.message || 'Không thể ghi nhận tiến độ');
+      if (isJsonResponse(response)) {
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to record progress');
+      } else {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
     }
 
     return await response.json();
   } catch (error) {
-    console.error('Error recording progress:', error);
-    handleApiError(error);
+    throw error;
   }
 };
 
@@ -47,7 +53,7 @@ export const getProgressByStage = async (planId, stageId, token) => {
       .replace(':planId', planId)
       .replace(':stageId', stageId);
 
-    const response = await fetch(`${API_URL}${endpoint}`, {
+    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${token}`
@@ -55,8 +61,12 @@ export const getProgressByStage = async (planId, stageId, token) => {
     });
 
     if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.message || 'Không thể lấy dữ liệu tiến độ');
+      if (isJsonResponse(response)) {
+        const error = await response.json();
+        throw new Error(error.message || 'Không thể lấy dữ liệu tiến độ');
+      } else {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
     }
 
     return await response.json();
@@ -74,7 +84,7 @@ export const getTotalCigarettesInPeriod = async (planId, stageId, startDate, end
       .replace(':stageId', stageId);
 
     const response = await fetch(
-      `${API_URL}${endpoint}?startDate=${startDate.toISOString()}&endDate=${endDate.toISOString()}`,
+      `${API_BASE_URL}${endpoint}?startDate=${startDate.toISOString()}&endDate=${endDate.toISOString()}`,
       {
         method: 'GET',
         headers: {
@@ -85,8 +95,12 @@ export const getTotalCigarettesInPeriod = async (planId, stageId, startDate, end
     console.log('getTotalCigarettesInPeriod API raw response:', response);
 
     if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.message || 'Không thể lấy tổng số điếu thuốc');
+      if (isJsonResponse(response)) {
+        const error = await response.json();
+        throw new Error(error.message || 'Không thể lấy tổng số điếu thuốc');
+      } else {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
     }
 
     return await response.json();
@@ -104,7 +118,7 @@ export const getTotalMoneySpentInPeriod = async (planId, stageId, startDate, end
       .replace(':stageId', stageId);
 
     const response = await fetch(
-      `${API_URL}${endpoint}?startDate=${startDate.toISOString()}&endDate=${endDate.toISOString()}`,
+      `${API_BASE_URL}${endpoint}?startDate=${startDate.toISOString()}&endDate=${endDate.toISOString()}`,
       {
         method: 'GET',
         headers: {
@@ -115,8 +129,12 @@ export const getTotalMoneySpentInPeriod = async (planId, stageId, startDate, end
     console.log('getTotalMoneySpentInPeriod API raw response:', response);
 
     if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.message || 'Không thể lấy tổng số tiền đã tiêu');
+      if (isJsonResponse(response)) {
+        const error = await response.json();
+        throw new Error(error.message || 'Không thể lấy tổng số tiền đã tiêu');
+      } else {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
     }
 
     return await response.json();
@@ -134,7 +152,7 @@ export const getDailyProgressStats = async (planId, stageId, token) => {
       .replace(':stageId', stageId);
 
     const response = await fetch(
-      `${API_URL}${endpoint}`,
+      `${API_BASE_URL}${endpoint}`,
       {
         method: 'GET',
         headers: {
@@ -144,8 +162,12 @@ export const getDailyProgressStats = async (planId, stageId, token) => {
     );
 
     if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.message || 'Không thể lấy thống kê tiến độ');
+      if (isJsonResponse(response)) {
+        const error = await response.json();
+        throw new Error(error.message || 'Không thể lấy thống kê tiến độ');
+      } else {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
     }
 
     return await response.json();

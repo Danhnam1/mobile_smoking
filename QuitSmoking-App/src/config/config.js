@@ -1,5 +1,5 @@
 // API Configuration
-export const API_URL = 'http://10.0.2.2:3000/api'; // Development (for Android Emulator)
+// export const API_URL = 'http://10.0.2.2:3000/api'; // Development (for Android Emulator)
 // export const API_URL = 'http://YOUR_LOCAL_IP:3000/api'; // Development (for physical device or other emulators)
 // export const API_URL = 'https://your-production-api.com/api'; // Production
 
@@ -51,8 +51,8 @@ export const ENDPOINTS = {
         DELETE_STAGE: '/quit-plans/:planId/stages/:stageId',
     },
     SMOKINGSTATUS: {
-        RECORD_SMOKING: '/quit-plan/:planId/stages/:stageId/status',
-        GET_ALL_SMOKING: '/quit-plan/:planId/stages/:stageId/status',
+        RECORD_SMOKING: '/quit-plans/:planId/stages/:stageId/status',
+        GET_ALL_SMOKING: '/quit-plans/:planId/stages/:stageId/status',
     },
     MEMBERSHIP: {
         PACKAGES: '/membership/packages',

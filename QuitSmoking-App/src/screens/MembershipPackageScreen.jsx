@@ -6,6 +6,8 @@ import { Picker } from '@react-native-picker/picker';
 import { WebView } from 'react-native-webview';
 import { useAuth } from '../contexts/AuthContext';
 import { useFocusEffect } from '@react-navigation/native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import queryString from 'query-string';
 
 const { width, height } = Dimensions.get('window');
 
@@ -22,6 +24,53 @@ const MembershipPackageScreen = ({ navigation, route }) => {
 
     const userId = user?._id;
     const userToken = token;
+
+    // Functions to handle AsyncStorage for payment status
+    const savePaymentOrder = async (orderId, packageData) => {
+        try {
+            const paymentData = {
+                orderId,
+                packageData,
+                timestamp: new Date().toISOString(),
+                userId
+            };
+            await AsyncStorage.setItem('pendingPayPalOrder', JSON.stringify(paymentData));
+            console.log('Payment order saved to AsyncStorage:', orderId);
+        } catch (error) {
+            console.error('Error saving payment order to AsyncStorage:', error);
+        }
+    };
+
+    const loadPaymentOrder = async () => {
+        try {
+            const paymentData = await AsyncStorage.getItem('pendingPayPalOrder');
+            if (paymentData) {
+                const parsed = JSON.parse(paymentData);
+                // Only load if it's for the current user and not older than 24 hours
+                if (parsed.userId === userId && 
+                    new Date(parsed.timestamp) > new Date(Date.now() - 24 * 60 * 60 * 1000)) {
+                    setCurrentPayPalOrderId(parsed.orderId);
+                    setSelectedPackageForPayment(parsed.packageData);
+                    console.log('Loaded pending payment order from AsyncStorage:', parsed.orderId);
+                } else {
+                    // Clear old or invalid data
+                    await AsyncStorage.removeItem('pendingPayPalOrder');
+                }
+            }
+        } catch (error) {
+            console.error('Error loading payment order from AsyncStorage:', error);
+        }
+    };
+
+    const clearPaymentOrder = async () => {
+        try {
+            await AsyncStorage.removeItem('pendingPayPalOrder');
+            setCurrentPayPalOrderId(null);
+            console.log('Payment order cleared from AsyncStorage');
+        } catch (error) {
+            console.error('Error clearing payment order from AsyncStorage:', error);
+        }
+    };
 
     const fetchPackages = useCallback(async () => {
         if (!userToken) {
@@ -49,6 +98,7 @@ const MembershipPackageScreen = ({ navigation, route }) => {
         console.log('MembershipPackageScreen: Token from AuthContext', token);
         if (userToken) {
             fetchPackages();
+            loadPaymentOrder(); // Load any pending payment orders
         }
     }, [user, token, fetchPackages]);
 
@@ -57,10 +107,53 @@ const MembershipPackageScreen = ({ navigation, route }) => {
         useCallback(() => {
             if (currentPayPalOrderId && userToken && userId) {
                 console.log('Screen focused with pending PayPal order, checking status...');
-                handleCheckPaymentStatus();
+                // Add a small delay to ensure the app is fully loaded
+                const timer = setTimeout(() => {
+                    handleCheckPaymentStatus();
+                }, 1000);
+                
+                return () => clearTimeout(timer);
             }
         }, [currentPayPalOrderId, userToken, userId])
     );
+
+    useEffect(() => {
+        const handleDeepLink = async (event) => {
+            const url = event.url;
+            if (url.startsWith('myapp://paypal-success')) {
+                // Lấy orderId từ url
+                const parsed = queryString.parseUrl(url);
+                const orderId = parsed.query.orderId;
+                if (orderId) {
+                    try {
+                        setLoading(true);
+                        const res = await capturePayPalOrder({ orderId }, userToken);
+                        Alert.alert('🎉 Thành công', 'Thanh toán thành công! Gói của bạn đã được kích hoạt.');
+                        await updateMembershipStatus({
+                            package_id: res.userMembership.package_id,
+                            package_name: 'pro',
+                            start_date: res.userMembership.payment_date,
+                            end_date: res.userMembership.expire_date
+                        });
+                        navigation.navigate('Main', { screen: 'HomeTab' });
+                    } catch (err) {
+                        Alert.alert('❌ Lỗi', 'Không xác nhận được thanh toán!');
+                    } finally {
+                        setLoading(false);
+                    }
+                }
+            }
+            if (url.startsWith('myapp://paypal-cancel')) {
+                Alert.alert('❌ Đã hủy', 'Bạn đã hủy thanh toán PayPal.');
+            }
+        };
+
+        Linking.addEventListener('url', handleDeepLink);
+        Linking.getInitialURL().then((url) => {
+            if (url) handleDeepLink({ url });
+        });
+        return () => Linking.removeEventListener('url', handleDeepLink);
+    }, [userToken]);
 
     const initiatePayPalPayment = async (packageData, userToken, packageId) => {
         try {
@@ -88,9 +181,16 @@ const MembershipPackageScreen = ({ navigation, route }) => {
             });
             
             setCurrentPayPalOrderId(response.orderId);
+            
+            // Save payment order to AsyncStorage
+            await savePaymentOrder(response.orderId, packageData);
 
             Linking.openURL(response.approveUrl);
-            Alert.alert('Chuyển hướng', 'Bạn sẽ được chuyển hướng đến PayPal để hoàn tất thanh toán. Vui lòng quay lại ứng dụng để kiểm tra trạng thái.');
+            Alert.alert(
+                '🔄 Chuyển hướng đến PayPal', 
+                'Bạn sẽ được chuyển hướng đến PayPal để hoàn tất thanh toán.\n\nSau khi thanh toán xong, hãy quay lại ứng dụng để kiểm tra trạng thái và kích hoạt gói thành viên.',
+                [{ text: 'Đã hiểu' }]
+            );
 
         } catch (err) {
             console.error('PayPal payment error:', err);
@@ -151,38 +251,101 @@ const MembershipPackageScreen = ({ navigation, route }) => {
 
     const handleCheckPaymentStatus = async () => {
         if (!currentPayPalOrderId || !userId || !userToken) {
-            Alert.alert('Lỗi', 'Không có đơn hàng PayPal nào để kiểm tra.');
+            console.log('No PayPal order to check or missing credentials');
             return;
         }
 
-        Alert.alert('Kiểm tra trạng thái', 'Đang kiểm tra trạng thái thanh toán...', [{ text: 'OK' }]);
-
         try {
+            console.log('Checking payment status for order:', currentPayPalOrderId);
+            
+            // Show loading indicator
+            Alert.alert('Đang kiểm tra', 'Vui lòng chờ trong giây lát...', [], { cancelable: false });
+            
             const statusResponse = await getPayPalPaymentStatus(currentPayPalOrderId, userToken);
+            
+            console.log('Payment status response:', statusResponse);
+            
             if (statusResponse && statusResponse.status) {
-                Alert.alert(
-                    'Trạng thái thanh toán',
-                    `Trạng thái đơn hàng của bạn: ${statusResponse.status.toUpperCase()}`,
-                    [
-                        { text: 'OK', onPress: () => {
-                            if (statusResponse.status === 'success') {
-                                Alert.alert('Thành công', 'Thanh toán đã hoàn tất!');
-                                navigation.navigate('Main', { screen: 'HomeTab' });
-                            } else if (statusResponse.status === 'pending') {
-                                Alert.alert('Đang chờ', 'Thanh toán đang chờ xử lý. Vui lòng kiểm tra lại sau.');
-                            } else {
-                                Alert.alert('Thất bại', 'Thanh toán thất bại hoặc đã bị hủy.');
+                const status = statusResponse.status.toLowerCase();
+                
+                if (status === 'completed' || status === 'success') {
+                    // Payment successful
+                    Alert.alert(
+                        '🎉 Thanh toán thành công!',
+                        'Gói thành viên của bạn đã được kích hoạt. Bạn có thể sử dụng tất cả tính năng premium ngay bây giờ.',
+                        [
+                            { 
+                                text: 'Tuyệt vời!', 
+                                onPress: async () => {
+                                    // Update membership status in context
+                                    if (selectedPackageForPayment) {
+                                        updateMembershipStatus({
+                                            package_id: selectedPackageForPayment._id,
+                                            package_name: selectedPackageForPayment.name,
+                                            start_date: new Date().toISOString(),
+                                            end_date: new Date(Date.now() + selectedPackageForPayment.duration_days * 24 * 60 * 60 * 1000).toISOString()
+                                        });
+                                    }
+                                    await clearPaymentOrder();
+                                    navigation.navigate('Main', { screen: 'HomeTab' });
+                                }
                             }
-                            setCurrentPayPalOrderId(null);
-                        }}
+                        ]
+                    );
+                } else if (status === 'pending' || status === 'processing') {
+                    // Payment still pending
+                    Alert.alert(
+                        '⏳ Thanh toán đang xử lý',
+                        'Thanh toán của bạn đang được xử lý. Vui lòng kiểm tra lại sau vài phút.',
+                        [
+                            { text: 'Kiểm tra lại', onPress: () => handleCheckPaymentStatus() },
+                            { text: 'Để sau', onPress: () => setCurrentPayPalOrderId(null) }
+                        ]
+                    );
+                } else if (status === 'failed' || status === 'cancelled' || status === 'denied') {
+                    // Payment failed
+                    Alert.alert(
+                        '❌ Thanh toán thất bại',
+                        'Thanh toán của bạn không thành công. Vui lòng thử lại hoặc chọn phương thức thanh toán khác.',
+                        [
+                            { text: 'Thử lại', onPress: async () => {
+                                await clearPaymentOrder();
+                                setPaymentModalVisible(true);
+                            }},
+                            { text: 'Để sau', onPress: async () => await clearPaymentOrder() }
+                        ]
+                    );
+                } else {
+                    // Unknown status
+                    Alert.alert(
+                        '❓ Trạng thái không xác định',
+                        `Trạng thái thanh toán: ${statusResponse.status}. Vui lòng liên hệ hỗ trợ nếu cần thiết.`,
+                        [
+                            { text: 'Kiểm tra lại', onPress: () => handleCheckPaymentStatus() },
+                            { text: 'Để sau', onPress: async () => await clearPaymentOrder() }
+                        ]
+                    );
+                }
+            } else {
+                Alert.alert(
+                    '⚠️ Không thể kiểm tra trạng thái',
+                    'Không nhận được thông tin trạng thái thanh toán. Vui lòng thử lại sau.',
+                    [
+                        { text: 'Thử lại', onPress: () => handleCheckPaymentStatus() },
+                        { text: 'Để sau', onPress: async () => await clearPaymentOrder() }
                     ]
                 );
-            } else {
-                Alert.alert('Lỗi', 'Không nhận được trạng thái thanh toán.');
             }
         } catch (error) {
             console.error('Error checking payment status:', error);
-            Alert.alert('Lỗi', error.message || 'Không thể kiểm tra trạng thái thanh toán!');
+            Alert.alert(
+                '❌ Lỗi kiểm tra trạng thái',
+                'Không thể kiểm tra trạng thái thanh toán. Vui lòng thử lại sau hoặc liên hệ hỗ trợ.',
+                [
+                    { text: 'Thử lại', onPress: () => handleCheckPaymentStatus() },
+                    { text: 'Để sau', onPress: async () => await clearPaymentOrder() }
+                ]
+            );
         }
     };
 
@@ -281,16 +444,21 @@ const MembershipPackageScreen = ({ navigation, route }) => {
             ))}
 
             <TouchableOpacity style={styles.nextButton} onPress={() => navigation.navigate('Main', { screen: 'HomeTab' })}> 
-                <Text style={styles.nextButtonText}>Tiếp theo (Dành cho người bỏ qua)</Text>
+                <Text style={styles.nextButtonText}>Skip (Comback to Home)</Text>
             </TouchableOpacity>
 
             {currentPayPalOrderId && (
-                <TouchableOpacity 
-                    style={styles.checkStatusButton}
-                    onPress={handleCheckPaymentStatus}
-                >
-                    <Text style={styles.checkStatusButtonText}>Kiểm tra trạng thái thanh toán</Text>
-                </TouchableOpacity>
+                <View style={styles.paymentStatusContainer}>
+                    <Text style={styles.paymentStatusText}>
+                        ⏳ Bạn có đơn hàng PayPal đang chờ xử lý
+                    </Text>
+                    <TouchableOpacity 
+                        style={styles.checkStatusButton}
+                        onPress={handleCheckPaymentStatus}
+                    >
+                        <Text style={styles.checkStatusButtonText}>Kiểm tra trạng thái thanh toán</Text>
+                    </TouchableOpacity>
+                </View>
             )}
 
             <Modal
@@ -352,82 +520,80 @@ const MembershipPackageScreen = ({ navigation, route }) => {
 const styles = StyleSheet.create({
     scrollContainer: {
         flexGrow: 1,
-        paddingVertical: 30,
-        paddingHorizontal: 20,
-        backgroundColor: '#F7F9FC',
+        paddingVertical: 32,
+        paddingHorizontal: 16,
+        backgroundColor: '#F4F6FB',
     },
     centeredContainer: {
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
-        backgroundColor: '#F7F9FC',
+        backgroundColor: '#F4F6FB',
     },
     loadingText: {
         marginTop: 15,
-        fontSize: 17,
-        color: '#555',
-        fontWeight: '500',
+        fontSize: 18,
+        color: '#6C63FF',
+        fontWeight: '600',
     },
     errorText: {
         fontSize: 17,
-        color: '#D9534F',
+        color: '#E74C3C',
         textAlign: 'center',
         marginBottom: 20,
-        fontWeight: '500',
+        fontWeight: '600',
     },
     retryButton: {
-        backgroundColor: '#5CB85C',
+        backgroundColor: '#6C63FF',
         paddingVertical: 12,
-        paddingHorizontal: 25,
-        borderRadius: 10,
-        shadowColor: '#000',
+        paddingHorizontal: 28,
+        borderRadius: 12,
+        shadowColor: '#6C63FF',
         shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 5,
-        elevation: 3,
+        shadowOpacity: 0.15,
+        shadowRadius: 8,
+        elevation: 4,
     },
     retryButtonText: {
         color: '#fff',
         fontSize: 17,
-        fontWeight: '600',
+        fontWeight: '700',
     },
     title: {
         fontSize: 32,
-        fontWeight: '800',
-        color: '#2C3E50',
+        fontWeight: '900',
+        color: '#22223B',
         textAlign: 'center',
-        marginBottom: 10,
+        marginBottom: 8,
         letterSpacing: 0.5,
     },
     subtitle: {
         fontSize: 17,
-        color: '#7F8C8D',
+        color: '#4A4E69',
         textAlign: 'center',
-        marginBottom: 35,
+        marginBottom: 32,
         lineHeight: 25,
     },
     packageCard: {
-        backgroundColor: '#FFFFFF',
-        borderRadius: 16,
-        padding: 20,
-        marginBottom: 16,
-        shadowColor: '#000',
-        shadowOffset: {
-            width: 0,
-            height: 4,
-        },
-        shadowOpacity: 0.1,
-        shadowRadius: 12,
-        elevation: 5,
-        borderWidth: 1,
-        borderColor: '#E9ECEF',
+        backgroundColor: '#fff',
+        borderRadius: 20,
+        padding: 24,
+        marginBottom: 18,
+        shadowColor: '#6C63FF',
+        shadowOffset: { width: 0, height: 8 },
+        shadowOpacity: 0.08,
+        shadowRadius: 16,
+        elevation: 6,
+        borderWidth: 1.5,
+        borderColor: '#E0E4F7',
     },
     proPackageCard: {
         borderColor: '#FFD700',
-        borderWidth: 3,
+        borderWidth: 2.5,
         shadowColor: '#FFD700',
-        shadowOpacity: 0.2,
-        elevation: 10,
+        shadowOpacity: 0.18,
+        elevation: 12,
+        backgroundColor: '#FFF9E5',
     },
     packageHeader: {
         flexDirection: 'row',
@@ -436,84 +602,89 @@ const styles = StyleSheet.create({
         marginBottom: 16,
     },
     packageName: {
-        fontSize: 20,
-        fontWeight: '700',
-        color: '#212529',
+        fontSize: 22,
+        fontWeight: '800',
+        color: '#22223B',
     },
     proPackageName: {
         color: '#FFD700',
+        textShadowColor: '#FFF3B0',
+        textShadowOffset: { width: 0, height: 1 },
+        textShadowRadius: 4,
     },
     packageDescription: {
         fontSize: 16,
-        color: '#555',
+        color: '#4A4E69',
         textAlign: 'center',
         marginBottom: 15,
         lineHeight: 22,
+        fontWeight: '500',
     },
     packagePrice: {
-        fontSize: 24,
-        fontWeight: '800',
-        color: '#228BE6',
+        fontSize: 26,
+        fontWeight: '900',
+        color: '#6C63FF',
+        marginBottom: 2,
     },
     packageDuration: {
-        fontSize: 16,
+        fontSize: 15,
         color: '#868E96',
-        marginBottom: 12,
+        marginBottom: 10,
+        fontStyle: 'italic',
     },
     featuresContainer: {
-        marginBottom: 20,
+        marginBottom: 18,
     },
     featureItem: {
         flexDirection: 'row',
         alignItems: 'center',
-        marginBottom: 8,
+        marginBottom: 7,
     },
     featureIcon: {
-        marginRight: 8,
-        color: '#40C057',
+        marginRight: 10,
     },
     featureText: {
         fontSize: 15,
         color: '#495057',
+        fontWeight: '500',
     },
     selectButton: {
-        backgroundColor: '#228BE6',
-        paddingVertical: 12,
-        paddingHorizontal: 24,
-        borderRadius: 8,
+        backgroundColor: '#6C63FF',
+        paddingVertical: 13,
+        paddingHorizontal: 28,
+        borderRadius: 10,
         alignItems: 'center',
-        shadowColor: '#228BE6',
-        shadowOffset: { 
-            width: 0,
-            height: 4,
-        },
-        shadowOpacity: 0.3,
+        shadowColor: '#6C63FF',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.18,
         shadowRadius: 8,
         elevation: 5,
+        marginTop: 8,
     },
     selectButtonText: {
         color: '#FFFFFF',
-        fontSize: 16,
-        fontWeight: '600',
+        fontSize: 17,
+        fontWeight: '700',
+        letterSpacing: 0.2,
     },
     nextButton: {
-        backgroundColor: '#BDC3C7',
+        backgroundColor: '#BDBDBD',
         paddingVertical: 14,
         paddingHorizontal: 30,
-        borderRadius: 12,
-        marginTop: 25,
+        borderRadius: 14,
+        marginTop: 28,
         width: '100%',
         alignItems: 'center',
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.05,
+        shadowOpacity: 0.07,
         shadowRadius: 5,
         elevation: 2,
     },
     nextButtonText: {
-        color: '#555',
+        color: '#fff',
         fontSize: 17,
-        fontWeight: '600',
+        fontWeight: '700',
     },
     noPackagesContainer: {
         alignItems: 'center',
@@ -529,31 +700,28 @@ const styles = StyleSheet.create({
     modalOverlay: {
         flex: 1,
         justifyContent: 'flex-end',
-        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+        backgroundColor: 'rgba(44, 62, 80, 0.18)',
     },
     modalContent: {
         backgroundColor: '#FFFFFF',
-        borderTopLeftRadius: 20,
-        borderTopRightRadius: 20,
-        padding: 24,
-        width: '90%',
-        maxWidth: 320,
+        borderTopLeftRadius: 24,
+        borderTopRightRadius: 24,
+        padding: 28,
+        width: '92%',
+        maxWidth: 340,
         alignSelf: 'center',
-        shadowColor: '#000',
-        shadowOffset: {
-            width: 0,
-            height: -8,
-        },
-        shadowOpacity: 0.25,
-        shadowRadius: 16,
-        elevation: 10,
-        paddingBottom: Platform.OS === 'ios' ? 40 : 24,
+        shadowColor: '#6C63FF',
+        shadowOffset: { width: 0, height: -8 },
+        shadowOpacity: 0.18,
+        shadowRadius: 18,
+        elevation: 12,
+        paddingBottom: Platform.OS === 'ios' ? 44 : 28,
     },
     modalTitle: {
-        fontSize: 20,
-        fontWeight: '700',
-        color: '#212529',
-        marginBottom: 20,
+        fontSize: 22,
+        fontWeight: '800',
+        color: '#22223B',
+        marginBottom: 18,
         textAlign: 'center',
     },
     modalDetailsContainer: {
@@ -576,15 +744,15 @@ const styles = StyleSheet.create({
     modalDetailValue: {
         fontSize: 15,
         color: '#2C3E50',
-        fontWeight: '600',
+        fontWeight: '700',
         textAlign: 'right',
     },
     modalPrice: {
-        fontSize: 24,
-        fontWeight: '800',
-        color: '#4ECB71',
-        marginBottom: 20,
-        marginTop: 15,
+        fontSize: 25,
+        fontWeight: '900',
+        color: '#6C63FF',
+        marginBottom: 18,
+        marginTop: 12,
         textAlign: 'center',
     },
     paymentMethodLabel: {
@@ -598,15 +766,10 @@ const styles = StyleSheet.create({
     paymentMethodPickerWrapper: {
         borderWidth: 1,
         borderColor: '#D1D9E6',
-        borderRadius: 8,
+        borderRadius: 10,
         backgroundColor: '#FDFDFD',
         marginBottom: 15,
         width: '100%',
-        shadowColor: 'transparent',
-        shadowOffset: { width: 0, height: 0 },
-        shadowOpacity: 0,
-        shadowRadius: 0,
-        elevation: 0,
         height: 65,
         justifyContent: 'center',
         paddingHorizontal: 15,
@@ -624,22 +787,22 @@ const styles = StyleSheet.create({
         textAlign: 'left',
     },
     subscribeButton: {
-        backgroundColor: '#4ECB71',
-        paddingVertical: 14,
-        borderRadius: 8,
+        backgroundColor: '#48CAE4',
+        paddingVertical: 15,
+        borderRadius: 10,
         width: '100%',
         alignItems: 'center',
-        shadowColor: '#4ECB71',
+        shadowColor: '#48CAE4',
         shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.3,
+        shadowOpacity: 0.18,
         shadowRadius: 8,
         elevation: 5,
-        marginTop: 15,
+        marginTop: 18,
     },
     subscribeButtonText: {
         color: '#fff',
         fontSize: 18,
-        fontWeight: '700',
+        fontWeight: '800',
         letterSpacing: 0.5,
     },
     cancelText: {
@@ -663,144 +826,49 @@ const styles = StyleSheet.create({
         lineHeight: 16,
     },
     linkText: {
-        color: '#3498DB',
-        fontWeight: '600',
+        color: '#6C63FF',
+        fontWeight: '700',
     },
     checkStatusButton: {
-        backgroundColor: '#5CB85C',
+        backgroundColor: '#6C63FF',
         paddingVertical: 14,
         paddingHorizontal: 30,
-        borderRadius: 12,
+        borderRadius: 14,
         marginTop: 20,
         width: '100%',
         alignItems: 'center',
-        shadowColor: '#000',
+        shadowColor: '#6C63FF',
         shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.05,
+        shadowOpacity: 0.12,
         shadowRadius: 5,
         elevation: 2,
     },
     checkStatusButtonText: {
         color: '#fff',
         fontSize: 17,
-        fontWeight: '600',
-    },
-    container: {
-        flex: 1,
-        backgroundColor: '#F8F9FA',
-    },
-    header: {
-        padding: 20,
-        backgroundColor: '#FFFFFF',
-        borderBottomWidth: 1,
-        borderBottomColor: '#E9ECEF',
-    },
-    headerTitle: {
-        fontSize: 24,
         fontWeight: '700',
-        color: '#212529',
-        marginBottom: 8,
     },
-    headerSubtitle: {
-        fontSize: 16,
-        color: '#6C757D',
-        lineHeight: 22,
-    },
-    packageContainer: {
-        padding: 16,
-    },
-    proPackageCard: {
-        borderColor: '#FFD700',
-        borderWidth: 3,
-        shadowColor: '#FFD700',
-        shadowOpacity: 0.2,
-        elevation: 10,
-    },
-    featuresContainer: {
-        marginBottom: 20,
-    },
-    webViewOverlay: {
-        position: 'absolute',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        backgroundColor: '#FFFFFF',
-        zIndex: 1000,
-    },
-    webView: {
-        flex: 1,
-        width: '100%',
-        height: '100%',
-    },
-    closeButton: {
-        position: 'absolute',
-        top: 40,
-        right: 20,
-        zIndex: 1001,
-        backgroundColor: 'rgba(0, 0, 0, 0.5)',
-        borderRadius: 20,
-        padding: 8,
-    },
-    closeButtonText: {
-        color: '#FFFFFF',
-        fontSize: 16,
-        fontWeight: '600',
-    },
-    loadingContainer: {
-        position: 'absolute',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        justifyContent: 'center',
-        alignItems: 'center',
-        backgroundColor: 'rgba(255, 255, 255, 0.9)',
-    },
-    successContainer: {
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-        padding: 24,
-        backgroundColor: '#FFFFFF',
-    },
-    successIcon: {
-        fontSize: 80,
-        color: '#40C057',
-        marginBottom: 24,
-    },
-    successTitle: {
-        fontSize: 28,
-        fontWeight: '700',
-        color: '#212529',
+    paymentStatusContainer: {
+        backgroundColor: '#F0EFFF',
+        borderWidth: 1,
+        borderColor: '#E0E4F7',
+        borderRadius: 14,
+        padding: 18,
+        marginTop: 20,
         marginBottom: 16,
-        textAlign: 'center',
+        alignItems: 'center',
+        shadowColor: '#6C63FF',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.08,
+        shadowRadius: 5,
+        elevation: 2,
     },
-    successMessage: {
+    paymentStatusText: {
         fontSize: 16,
-        color: '#495057',
+        fontWeight: '700',
+        color: '#6C63FF',
         textAlign: 'center',
-        marginBottom: 32,
-        lineHeight: 24,
-    },
-    successButton: {
-        backgroundColor: '#228BE6',
-        paddingVertical: 14,
-        paddingHorizontal: 32,
-        borderRadius: 8,
-        shadowColor: '#228BE6',
-        shadowOffset: {
-            width: 0,
-            height: 4,
-        },
-        shadowOpacity: 0.3,
-        shadowRadius: 8,
-        elevation: 5,
-    },
-    successButtonText: {
-        color: '#FFFFFF',
-        fontSize: 16,
-        fontWeight: '600',
+        marginBottom: 12,
     },
 });
 

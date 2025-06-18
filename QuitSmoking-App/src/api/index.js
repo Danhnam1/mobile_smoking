@@ -1,9 +1,10 @@
 import { Platform } from 'react-native';
+import { ENDPOINTS } from '../config/config';
 
 // Thay đổi địa chỉ IP này thành địa chỉ IP cục bộ của máy tính bạn khi test trên thiết bị thật/iOS Simulator
 const LOCAL_IP_ADDRESS = '192.168.100.7'; // VÍ DỤ: '192.168.1.100'
 
-const API_BASE_URL = Platform.OS === 'android'
+export const API_BASE_URL = Platform.OS === 'android'
   ? 'http://10.0.2.2:3000/api' // Địa chỉ đặc biệt cho Android Emulator
   : `http://${LOCAL_IP_ADDRESS}:3000/api`; // Sử dụng IP cục bộ cho iOS và thiết bị thật
 
@@ -104,7 +105,11 @@ export const fetchUserProgress = async (userId) => {
 
 export const createSmokingStatus = async (planId, stageId, data) => {
   try {
-    const response = await fetch(`${API_BASE_URL}/quit-plan/${planId}/stages/${stageId}/status`, {
+    const endpoint = ENDPOINTS.SMOKINGSTATUS.RECORD_SMOKING
+      .replace(':planId', planId)
+      .replace(':stageId', stageId);
+
+    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -323,9 +328,11 @@ export const updateUser = async (userData, token) => {
   return await response.json();
 };
 
-export const getAllBadges = async () => {
+export const getAllBadges = async (token) => {
   try {
-    const response = await fetch(`${API_BASE_URL}/badges`);
+    const headers = {};
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+    const response = await fetch(`${API_BASE_URL}/badges`, { headers });
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
     }

@@ -141,7 +141,10 @@ const QuitStage = ({ navigation, route }) => {
       }
 
       const cigarettesCount = parseInt(cigarettesToday);
-      await recordProgress(currentPlanId, stageId, cigarettesCount, token);
+      await recordProgress(currentPlanId, stageId, {
+        cigarette_count: cigarettesCount,
+        money_spent: 0 // hoặc giá trị thực tế nếu có
+      }, token);
       
       // Update local state to show recorded status
       setRecordedToday(prev => ({

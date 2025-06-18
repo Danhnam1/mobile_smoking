@@ -1,8 +1,8 @@
-import { API_URL, ENDPOINTS } from '../config/config';
+import { API_BASE_URL } from './index';
 
 export const createQuitPlan = async (planData, token) => {
   try {
-    const response = await fetch(`${API_URL}${ENDPOINTS.QUITPLAN.CREATE_QUIT_PLAN}`, {
+    const response = await fetch(`${API_BASE_URL}/quit-plans`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -24,7 +24,7 @@ export const createQuitPlan = async (planData, token) => {
 
 export const getSuggestedStages = async (token) => {
   try {
-    const response = await fetch(`${API_URL}${ENDPOINTS.QUITPLAN.STAGE_SUGGESTION}`, {
+    const response = await fetch(`${API_BASE_URL}/quit-plans/stages/suggestion`, {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${token}`
@@ -44,7 +44,7 @@ export const getSuggestedStages = async (token) => {
 
 export const getUserQuitPlans = async (userId, token) => {
   try {
-    const response = await fetch(`${API_URL}${ENDPOINTS.QUITPLAN.GET_QUIT_PLAN_OF_USER.replace(':id', userId)}`, {
+    const response = await fetch(`${API_BASE_URL}/quit-plans/user/${userId}`, {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${token}`
@@ -64,7 +64,7 @@ export const getUserQuitPlans = async (userId, token) => {
 
 export const getQuitPlanById = async (planId, token) => {
   try {
-    const response = await fetch(`${API_URL}${ENDPOINTS.QUITPLAN.GET_DETAIL_QUITPLAN_OF_USER.replace(':planId', planId)}`, {
+    const response = await fetch(`${API_BASE_URL}/quit-plans/${planId}`, {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${token}`
@@ -83,28 +83,20 @@ export const getQuitPlanById = async (planId, token) => {
 };
 
 export const getQuitPlanStages = async (planId, token) => {
-  try {
-    const response = await fetch(`${API_URL}${ENDPOINTS.QUITSTAGE.GET_ALL_STAGE_OF_QUITPLAN.replace(':planId', planId)}`, {
-      method: 'GET',
-      headers: {
-        'Authorization': `Bearer ${token}`
-      }
-    });
+  const headers = { Authorization: `Bearer ${token}` };
+  const res = await fetch(`${API_BASE_URL}/quit-plans/${planId}/stages`, { headers });
 
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.message || 'Failed to get quit plan stages');
-    }
-
-    return await response.json();
-  } catch (error) {
-    throw error;
+  if (!res.ok) {
+    const error = await res.json();
+    throw new Error(error.message || 'Failed to get quit plan stages');
   }
+
+  return await res.json();
 };
 
 export const updateQuitPlanStatus = async (planId, status, token) => {
   try {
-    const response = await fetch(`${API_URL}${ENDPOINTS.QUITPLAN.UPDATE_QUITPLAN.replace(':planId', planId)}`, {
+    const response = await fetch(`${API_BASE_URL}/quit-plans/${planId}`, {
       method: 'PATCH',
       headers: {
         'Content-Type': 'application/json',
@@ -126,7 +118,7 @@ export const updateQuitPlanStatus = async (planId, status, token) => {
 
 export const getQuitPlanSummary = async (planId, token) => {
   try {
-    const response = await fetch(`${API_URL}${ENDPOINTS.QUITPLAN.SUMMARY.replace(':planId', planId)}`, {
+    const response = await fetch(`${API_BASE_URL}/quit-plans/${planId}/summary`, {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${token}`
@@ -147,7 +139,7 @@ export const getQuitPlanSummary = async (planId, token) => {
 
 export const createQuitPlanStage = async (planId, stageData, token) => {
   try {
-    const response = await fetch(`${API_URL}${ENDPOINTS.QUITSTAGE.CREATE_STAGE.replace(':planId', planId)}`, {
+    const response = await fetch(`${API_BASE_URL}/quit-plans/${planId}/stages`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -169,7 +161,7 @@ export const createQuitPlanStage = async (planId, stageData, token) => {
 
 export const updateQuitPlanStage = async (planId, stageId, stageData, token) => {
   try {
-    const response = await fetch(`${API_URL}${ENDPOINTS.QUITSTAGE.UPDATE_STAGE.replace(':planId', planId).replace(':stageId', stageId)}`, {
+    const response = await fetch(`${API_BASE_URL}/quit-plans/${planId}/stages/${stageId}`, {
       method: 'PATCH',
       headers: {
         'Content-Type': 'application/json',
@@ -191,7 +183,7 @@ export const updateQuitPlanStage = async (planId, stageId, stageData, token) => 
 
 export const deleteQuitPlanStage = async (planId, stageId, token) => {
   try {
-    const response = await fetch(`${API_URL}${ENDPOINTS.QUITSTAGE.DELETE_STAGE.replace(':planId', planId).replace(':stageId', stageId)}`, {
+    const response = await fetch(`${API_BASE_URL}/quit-plans/${planId}/stages/${stageId}`, {
       method: 'DELETE',
       headers: {
         'Authorization': `Bearer ${token}`
@@ -211,7 +203,7 @@ export const deleteQuitPlanStage = async (planId, stageId, token) => {
 
 export const recordProgress = async (planId, stageId, progressData, token) => {
   try {
-    const response = await fetch(`${API_URL}${ENDPOINTS.QUITPLANPROGRESS.RECORD_PROGRESS.replace(':id', planId).replace(':id', stageId)}`, {
+    const response = await fetch(`${API_BASE_URL}/quit-plans/${planId}/progress`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -233,7 +225,7 @@ export const recordProgress = async (planId, stageId, progressData, token) => {
 
 export const getProgressByStage = async (planId, stageId, token) => {
   try {
-    const response = await fetch(`${API_URL}${ENDPOINTS.QUITPLANPROGRESS.GET_ALL_PROGRESS.replace(':id', planId).replace(':id', stageId)}`, {
+    const response = await fetch(`${API_BASE_URL}/quit-plans/${planId}/progress/${stageId}`, {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${token}`
@@ -253,7 +245,7 @@ export const getProgressByStage = async (planId, stageId, token) => {
 
 export const recordSmokingStatus = async (planId, stageId, statusData, token) => {
   try {
-    const response = await fetch(`${API_URL}${ENDPOINTS.SMOKINGSTATUS.RECORD_SMOKING.replace(':id', planId).replace(':id', stageId)}`, {
+    const response = await fetch(`${API_BASE_URL}/quit-plans/${planId}/smoking-status/${stageId}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -275,7 +267,7 @@ export const recordSmokingStatus = async (planId, stageId, statusData, token) =>
 
 export const getSmokingStatus = async (planId, stageId, token) => {
   try {
-    const response = await fetch(`${API_URL}${ENDPOINTS.SMOKINGSTATUS.GET_ALL_SMOKING.replace(':id', planId).replace(':id', stageId)}`, {
+    const response = await fetch(`${API_BASE_URL}/quit-plans/${planId}/smoking-status/${stageId}`, {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${token}`
@@ -294,7 +286,7 @@ export const getSmokingStatus = async (planId, stageId, token) => {
 };
 
 export const fetchQuitPlan = async (userId, token) => {
-  const response = await fetch(`${API_URL}/quit-plans/user/${userId}`, { headers: { Authorization: `Bearer ${token}` } });
+  const response = await fetch(`${API_BASE_URL}/quit-plans/user/${userId}`, { headers: { Authorization: `Bearer ${token}` } });
   const plans = await response.json();
   // Trả về plan đầu tiên có status 'ongoing'
   return plans.find(plan => plan.status === 'ongoing');

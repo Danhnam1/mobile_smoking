@@ -13,6 +13,7 @@ import HomeStatsSection from '../components/HomeStatsSection';
 import HomeHealthImprovementSection from '../components/HomeHealthImprovementSection';
 import HomeQuickActionsSection from '../components/HomeQuickActionsSection';
 import { useAuth } from '../contexts/AuthContext';
+import BadgeScreen from './BadgeScreen';
 
 export default function Home() {
   const navigation = useNavigation();
@@ -29,9 +30,9 @@ export default function Home() {
 
   const loadData = useCallback(async () => {
     try {
-      // Fetch achievements first (usually not dependent on login status)
-      const badgesData = await getAllBadges();
-      setAchievements(badgesData.badges);
+      // // Fetch achievements first (usually not dependent on login status)
+      // const badgesData = await getAllBadges();
+      // setAchievements(badgesData.badges);
 
       // Fetch progress data ONLY if user ID and token are available from AuthContext
       if (user && token) {
@@ -136,32 +137,7 @@ export default function Home() {
         </TouchableOpacity>
 
         {/* Achievements Section */}
-        <View style={styles.sectionContainer}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Badge</Text>
-            <TouchableOpacity>
-              <Text style={styles.seeAllText}>See all</Text>
-            </TouchableOpacity>
-          </View>
-          {/* Render achievements dynamically */}
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.achievementsScroll}>
-            {loadingBadges ? (
-              <Text style={styles.loadingText}>Đang tải huy hiệu...</Text>
-            ) : badgesError ? (
-              <Text style={styles.errorText}>{badgesError}</Text>
-            ) : Array.isArray(achievements) && achievements.length > 0 ? (
-              achievements.map((achievement) => (
-                <View key={achievement._id} style={styles.achievementCard}>
-                  <Ionicons name="trophy-outline" size={50} color="#4CAF50" />
-                  <Text style={styles.achievementTitle}>{achievement.name}</Text>
-                  <Text style={styles.achievementDescription}>{achievement.description}</Text>
-                </View>
-              ))
-            ) : (
-              <Text style={styles.noBadgesText}>Không có huy hiệu nào.</Text>
-            )}
-          </ScrollView>
-        </View>
+        <BadgeScreen navigation={navigation} />
 
         {/* Health Improvements Section */}
         <View style={styles.sectionContainer}>
