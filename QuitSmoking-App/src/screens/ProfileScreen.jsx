@@ -21,9 +21,13 @@ const ProfileScreen = ({ navigation }) => {
   // Helper to format date for display
   const formattedBirthDate = user.birth_date ? new Date(user.birth_date).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' }) : 'Chưa cập nhật';
 
-  const renderInfoRow = (iconName, label, value) => (
+  const renderInfoRow = (iconType, iconName, label, value) => (
     <View style={styles.infoRow}>
-      <Ionicons name={iconName} size={20} color="#4ECB71" style={styles.infoIcon} />
+      {iconType === 'Ionicons' ? (
+        <Ionicons name={iconName} size={22} color="#4ECB71" style={styles.infoIcon} />
+      ) : (
+        <MaterialCommunityIcons name={iconName} size={22} color="#4ECB71" style={styles.infoIcon} />
+      )}
       <Text style={styles.infoLabel}>{label}:</Text>
       <Text style={styles.infoValue}>{value}</Text>
     </View>
@@ -46,38 +50,38 @@ const ProfileScreen = ({ navigation }) => {
           <View style={styles.cardHeaderWithEdit}>
             <Text style={styles.cardTitle}>Thông tin cá nhân</Text>
             <TouchableOpacity onPress={() => navigation.navigate('UserDetailScreen', { fromProfileEdit: true })}>
-              <MaterialCommunityIcons name="pencil-outline" size={22} color="#4ECB71" />
+              <MaterialCommunityIcons name="pencil-outline" size={22} color="green" />
             </TouchableOpacity>
           </View>
-          {renderInfoRow("person-outline", "Họ và tên", user.full_name || 'Chưa cập nhật')}
-          {renderInfoRow("mail-outline", "Email", user.email || 'Chưa cập nhật')}
-          {renderInfoRow("calendar-outline", "Ngày sinh", formattedBirthDate)}
-          {renderInfoRow("body-outline", "Giới tính", user.gender || 'Chưa cập nhật')}
+          {renderInfoRow('Ionicons', 'person-outline', 'Họ và tên', user.full_name || 'Chưa cập nhật')}
+          {renderInfoRow('Ionicons', 'mail-outline', 'Email', user.email || 'Chưa cập nhật')}
+          {renderInfoRow('Ionicons', 'calendar-outline', 'Ngày sinh', formattedBirthDate)}
+          {renderInfoRow('MaterialCommunityIcons', 'gender-male-female', 'Giới tính', user.gender || 'Chưa cập nhật')}
         </View>
 
         <View style={styles.card}>
           <View style={styles.cardHeaderWithEdit}>
             <Text style={styles.cardTitle}>SmokingStatus</Text>
             <TouchableOpacity onPress={() => navigation.navigate('SmokingStatus')}>
-              <MaterialCommunityIcons name="pencil-outline" size={22} color="#4ECB71" />
+              <MaterialCommunityIcons name="pencil-outline" size={22} color="green" />
             </TouchableOpacity>
           </View>
-          {renderInfoRow("flame-outline", "Số điếu thuốc tránh được", `${cigarettesAvoided} điếu`)}
-          {renderInfoRow("wallet-outline", "Tiền sẽ tiết kiệm được", `${moneySaved.toLocaleString()} VND`)}
-          {renderInfoRow("analytics-outline", "Số điếu mỗi ngày trước đây", user.smokingData?.cigaretteCount ? `${user.smokingData.cigaretteCount} điếu` : 'Chưa cập nhật')}
-          {renderInfoRow("cash-outline", "Giá 1 bao thuốc trước đây", user.smokingData?.pricePerPack ? `${user.smokingData.pricePerPack.toLocaleString()} VND` : 'Chưa cập nhật')}
-          {renderInfoRow("package-variant", "Số gói mỗi tuần", user.smokingData?.packsPerWeek ? `${user.smokingData.packsPerWeek} gói` : 'Chưa cập nhật')}
-          {renderInfoRow("smoking", "Tần suất hút", user.smokingData?.suctionFrequency ? 
+          {renderInfoRow('MaterialCommunityIcons', 'smoke', 'Số điếu thuốc tránh được', `${cigarettesAvoided} điếu`)}
+          {renderInfoRow('MaterialCommunityIcons', 'cash-multiple', 'Tiền tiết kiệm được', `${moneySaved.toLocaleString()} VND`)}
+          {renderInfoRow('MaterialCommunityIcons', 'numeric', 'Số điếu mỗi ngày trước đây', user.smokingData?.cigaretteCount ? `${user.smokingData.cigaretteCount} điếu` : 'Chưa cập nhật')}
+          {renderInfoRow('MaterialCommunityIcons', 'currency-usd', 'Giá 1 bao thuốc trước đây', user.smokingData?.pricePerPack ? `${user.smokingData.pricePerPack.toLocaleString()} VND` : 'Chưa cập nhật')}
+          {renderInfoRow('MaterialCommunityIcons', 'package-variant', 'Số gói mỗi tuần', user.smokingData?.packsPerWeek ? `${user.smokingData.packsPerWeek} gói` : 'Chưa cập nhật')}
+          {renderInfoRow('MaterialCommunityIcons', 'speedometer', 'Tần suất hút', user.smokingData?.suctionFrequency ? 
             user.smokingData.suctionFrequency === 'light' ? 'Nhẹ' :
             user.smokingData.suctionFrequency === 'medium' ? 'Trung bình' : 'Nặng'
             : 'Chưa cập nhật')}
-          {user.smokingData?.healthNote && renderInfoRow("note-text-outline", "Ghi chú sức khỏe", user.smokingData.healthNote)}
+          {user.smokingData?.healthNote && renderInfoRow('MaterialCommunityIcons', 'note-text-outline', 'Ghi chú sức khỏe', user.smokingData.healthNote)}
         </View>
 
         <View style={styles.card}>
           <Text style={styles.cardTitle}>Gói thành viên</Text>
-          {renderInfoRow("star-outline", "Trạng thái gói", user.membershipStatus?.package_name ? `${user.membershipStatus.package_name.toUpperCase()}` : 'Chưa có gói')}
-          {user.membershipStatus?.end_date && renderInfoRow("calendar-sharp", "Ngày hết hạn", new Date(user.membershipStatus.end_date).toLocaleDateString())}
+          {renderInfoRow('Ionicons', 'star-outline', 'Trạng thái gói', user.membershipStatus?.package_name ? `${user.membershipStatus.package_name.toUpperCase()}` : 'Chưa có gói')}
+          {user.membershipStatus?.end_date && renderInfoRow('MaterialCommunityIcons', 'calendar-check-outline', 'Ngày hết hạn', new Date(user.membershipStatus.end_date).toLocaleDateString())}
           <TouchableOpacity style={styles.membershipButton} onPress={() => navigation.navigate('MembershipPackage')}>
             <Text style={styles.membershipButtonText}>Xem/Nâng cấp gói</Text>
           </TouchableOpacity>
@@ -145,6 +149,7 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   infoIcon: {
+    color:'green',
     marginRight: 10,
     width: 24,
     textAlign: 'center',
@@ -163,7 +168,7 @@ const styles = StyleSheet.create({
     textAlign: 'right',
   },
   membershipButton: {
-    backgroundColor: '#228BE6',
+    backgroundColor: 'green',
     paddingVertical: 12,
     borderRadius: 8,
     alignItems: 'center',

@@ -40,7 +40,7 @@ const AppHeader = () => {
     <View style={styles.headerContainer}>
       <Text style={styles.headerTitle}>QUITNOW</Text>
       <View style={styles.iconContainer}>
-        <Ionicons name="cloud-upload-outline" size={24} color="#888" style={styles.icon} />
+        
         <TouchableOpacity onPress={() => navigation.navigate('SettingsScreen')}>
           <Ionicons name="settings-outline" size={24} color="#888" style={styles.icon} />
         </TouchableOpacity>

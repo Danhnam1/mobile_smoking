@@ -21,6 +21,8 @@ import AllBadgesScreen from './src/screens/AllBadgesScreen';
 import { AuthProvider, useAuth } from './src/contexts/AuthContext';
 import QuitStage from './src/screens/QuitStage';
 import { AiOutlineSchedule } from 'react-icons/ai';
+import './src/config/firebase';
+
 
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
@@ -96,6 +98,7 @@ function Navigation() {
       <Stack.Screen name="QuitPlanScreen" component={QuitPlanScreen} />
       <Stack.Screen name="QuitStage" component={QuitStage} />
       <Stack.Screen name="AllBadges" component={AllBadgesScreen} />
+      <Stack.Screen name="QuitPlanDetailScreen" component={require('./src/screens/QuitPlanDetailScreen').default} />
 
     </Stack.Navigator>
   );

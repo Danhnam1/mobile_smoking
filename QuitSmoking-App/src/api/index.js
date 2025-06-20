@@ -366,3 +366,16 @@ export const createQuitPlan = async (planData, token) => {
     throw error;
   }
 };
+
+export const loginWithGoogle = async (idToken) => {
+  const response = await fetch(`${API_BASE_URL}/auth/login/google`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ idToken }),
+  });
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.message || 'Google login failed');
+  }
+  return await response.json();
+};

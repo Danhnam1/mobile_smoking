@@ -112,6 +112,19 @@ export default function Home() {
     return smokingStatusData.money_spent.toFixed(2);
   };
 
+  const handlePressQuitPlan = async () => {
+    try {
+      const plan = await fetchQuitPlan(user._id, token);
+      if (plan) {
+        navigation.navigate('QuitPlanDetailScreen', { planId: plan._id });
+      } else {
+        navigation.navigate('QuitPlanScreen');
+      }
+    } catch (error) {
+      navigation.navigate('QuitPlanScreen');
+    }
+  };
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <AppHeader />
@@ -156,7 +169,8 @@ export default function Home() {
         </View>
 
         {/* QuitPlan Section */}
-        <TouchableOpacity style={styles.sectionContainer} onPress={() => navigation.navigate('QuitPlanScreen')}>
+        <TouchableOpacity onPress={handlePressQuitPlan}>
+          <View style={styles.sectionContainer}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Quit Plan</Text>
           </View>
@@ -165,6 +179,7 @@ export default function Home() {
             <View style={styles.healthImprovementTextContainer}>
               <Text style={styles.upgradeTitle}>Your Quit Journey</Text>
               <Text style={styles.upgradeDescription}>Track your progress and follow your personalized quit plan...</Text>
+              </View>
             </View>
           </View>
         </TouchableOpacity>

@@ -72,9 +72,9 @@ const SettingsScreen = ({ navigation }) => {
       <ScrollView style={styles.content}>
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Tài khoản</Text>
-          {renderSettingItem('account-outline', 'Thông tin cá nhân', () => navigation.navigate('UserDetailScreen'))}
+          {renderSettingItem('account-outline', 'Thông tin cá nhân', () => navigation.navigate('ProfileScreen'))}
           {renderSettingItem('bell-outline', 'Thông báo', () => {})}
-          {renderSettingItem('shield-outline', 'Bảo mật', () => {})}
+          
         </View>
 
         <View style={styles.section}>

@@ -1,5 +1,16 @@
 import { API_BASE_URL } from './index';
 
+// Helper to safely parse JSON only if content-type is application/json
+const safeParseJSON = async (response) => {
+  const contentType = response.headers.get('content-type');
+  if (contentType && contentType.includes('application/json')) {
+    return await response.json();
+  } else {
+    const text = await response.text();
+    throw new Error('Server returned non-JSON response: ' + text);
+  }
+};
+
 export const createQuitPlan = async (planData, token) => {
   try {
     const response = await fetch(`${API_BASE_URL}/quit-plans`, {
@@ -12,11 +23,9 @@ export const createQuitPlan = async (planData, token) => {
     });
 
     if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.message || 'Failed to create quit plan');
+      throw await safeParseJSON(response);
     }
-    const jsonResponse = await response.json();
-    return jsonResponse;
+    return await safeParseJSON(response);
   } catch (error) {
     throw error;
   }
@@ -24,7 +33,7 @@ export const createQuitPlan = async (planData, token) => {
 
 export const getSuggestedStages = async (token) => {
   try {
-    const response = await fetch(`${API_BASE_URL}/quit-plans/stages/suggestion`, {
+    const response = await fetch(`${API_BASE_URL}/quit-plans/stage-suggestion`, {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${token}`
@@ -32,11 +41,9 @@ export const getSuggestedStages = async (token) => {
     });
 
     if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.message || 'Failed to get suggested stages');
+      throw await safeParseJSON(response);
     }
-
-    return await response.json();
+    return await safeParseJSON(response);
   } catch (error) {
     throw error;
   }
@@ -52,11 +59,9 @@ export const getUserQuitPlans = async (userId, token) => {
     });
 
     if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.message || 'Failed to get user quit plans');
+      throw await safeParseJSON(response);
     }
-
-    return await response.json();
+    return await safeParseJSON(response);
   } catch (error) {
     throw error;
   }
@@ -72,11 +77,9 @@ export const getQuitPlanById = async (planId, token) => {
     });
 
     if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.message || 'Failed to get quit plan');
+      throw await safeParseJSON(response);
     }
-
-    return await response.json();
+    return await safeParseJSON(response);
   } catch (error) {
     throw error;
   }
@@ -87,11 +90,9 @@ export const getQuitPlanStages = async (planId, token) => {
   const res = await fetch(`${API_BASE_URL}/quit-plans/${planId}/stages`, { headers });
 
   if (!res.ok) {
-    const error = await res.json();
-    throw new Error(error.message || 'Failed to get quit plan stages');
+    throw await safeParseJSON(res);
   }
-
-  return await res.json();
+  return await safeParseJSON(res);
 };
 
 export const updateQuitPlanStatus = async (planId, status, token) => {
@@ -106,11 +107,9 @@ export const updateQuitPlanStatus = async (planId, status, token) => {
     });
 
     if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.message || 'Failed to update quit plan status');
+      throw await safeParseJSON(response);
     }
-
-    return await response.json();
+    return await safeParseJSON(response);
   } catch (error) {
     throw error;
   }
@@ -124,14 +123,12 @@ export const getQuitPlanSummary = async (planId, token) => {
         'Authorization': `Bearer ${token}`
       }
     });
-    console.log('getQuitPlanSummary API raw response:', response);
+    // console.log('getQuitPlanSummary API raw response:', response);
 
     if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.message || 'Failed to get quit plan summary');
+      throw await safeParseJSON(response);
     }
-
-    return await response.json();
+    return await safeParseJSON(response);
   } catch (error) {
     throw error;
   }
@@ -149,11 +146,9 @@ export const createQuitPlanStage = async (planId, stageData, token) => {
     });
 
     if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.message || 'Failed to create quit plan stage');
+      throw await safeParseJSON(response);
     }
-
-    return await response.json();
+    return await safeParseJSON(response);
   } catch (error) {
     throw error;
   }
@@ -171,11 +166,9 @@ export const updateQuitPlanStage = async (planId, stageId, stageData, token) => 
     });
 
     if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.message || 'Failed to update quit plan stage');
+      throw await safeParseJSON(response);
     }
-
-    return await response.json();
+    return await safeParseJSON(response);
   } catch (error) {
     throw error;
   }
@@ -191,11 +184,9 @@ export const deleteQuitPlanStage = async (planId, stageId, token) => {
     });
 
     if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.message || 'Failed to delete quit plan stage');
+      throw await safeParseJSON(response);
     }
-
-    return await response.json();
+    return await safeParseJSON(response);
   } catch (error) {
     throw error;
   }
@@ -213,11 +204,9 @@ export const recordProgress = async (planId, stageId, progressData, token) => {
     });
 
     if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.message || 'Failed to record progress');
+      throw await safeParseJSON(response);
     }
-
-    return await response.json();
+    return await safeParseJSON(response);
   } catch (error) {
     throw error;
   }
@@ -233,11 +222,9 @@ export const getProgressByStage = async (planId, stageId, token) => {
     });
 
     if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.message || 'Failed to get progress');
+      throw await safeParseJSON(response);
     }
-
-    return await response.json();
+    return await safeParseJSON(response);
   } catch (error) {
     throw error;
   }
@@ -255,11 +242,9 @@ export const recordSmokingStatus = async (planId, stageId, statusData, token) =>
     });
 
     if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.message || 'Failed to record smoking status');
+      throw await safeParseJSON(response);
     }
-
-    return await response.json();
+    return await safeParseJSON(response);
   } catch (error) {
     throw error;
   }
@@ -275,11 +260,9 @@ export const getSmokingStatus = async (planId, stageId, token) => {
     });
 
     if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.message || 'Failed to get smoking status');
+      throw await safeParseJSON(response);
     }
-
-    return await response.json();
+    return await safeParseJSON(response);
   } catch (error) {
     throw error;
   }
@@ -287,7 +270,10 @@ export const getSmokingStatus = async (planId, stageId, token) => {
 
 export const fetchQuitPlan = async (userId, token) => {
   const response = await fetch(`${API_BASE_URL}/quit-plans/user/${userId}`, { headers: { Authorization: `Bearer ${token}` } });
-  const plans = await response.json();
+  if (!response.ok) {
+    throw await safeParseJSON(response);
+  }
+  const plans = await safeParseJSON(response);
   // Trả về plan đầu tiên có status 'ongoing'
   return plans.find(plan => plan.status === 'ongoing');
 }; 
