@@ -22,6 +22,9 @@ import { AuthProvider, useAuth } from './src/contexts/AuthContext';
 import QuitStage from './src/screens/QuitStage';
 import { AiOutlineSchedule } from 'react-icons/ai';
 import './src/config/firebase';
+import CheckoutScreen from './src/screens/CheckoutScreen';
+import PayPalWebViewScreen from './src/screens/PayPalWebViewScreen';
+import TransactionsScreen from './src/screens/TransactionsScreen';
 
 
 const Tab = createBottomTabNavigator();
@@ -99,6 +102,9 @@ function Navigation() {
       <Stack.Screen name="QuitStage" component={QuitStage} />
       <Stack.Screen name="AllBadges" component={AllBadgesScreen} />
       <Stack.Screen name="QuitPlanDetailScreen" component={require('./src/screens/QuitPlanDetailScreen').default} />
+      <Stack.Screen name="Checkout" component={CheckoutScreen} />
+      <Stack.Screen name="PayPalWebView" component={PayPalWebViewScreen} />
+      <Stack.Screen name="TransactionsScreen" component={TransactionsScreen} />
 
     </Stack.Navigator>
   );

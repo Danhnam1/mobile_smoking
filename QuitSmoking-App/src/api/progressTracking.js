@@ -1,5 +1,4 @@
-import { API_BASE_URL } from './index';
-import { ENDPOINTS } from '../config/config';
+import { API_BASE_URL, ENDPOINTS } from '../config/config';
 
 // Helper function to handle API errors
 const handleApiError = (error) => {
@@ -173,6 +172,20 @@ export const getDailyProgressStats = async (planId, stageId, token) => {
     return await response.json();
   } catch (error) {
     console.error('Error fetching daily progress stats:', error);
+    handleApiError(error);
+  }
+};
+
+// Fetch progress tracking data for a user
+export const fetchUserProgress = async (userId) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/progress-tracking/user/${userId}`);
+    if (!response.ok) {
+      throw new Error('Failed to fetch progress data');
+    }
+    return await response.json();
+  } catch (error) {
+    console.error('Error fetching progress data:', error);
     handleApiError(error);
   }
 }; 

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Platform, Alert } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
-import { createSmokingStatusInitial } from '../api';
+import { createSmokingStatusInitial } from '../api/user';
 import { useAuth } from '../contexts/AuthContext';
 
 const SmokingStatus = ({ navigation, route }) => {

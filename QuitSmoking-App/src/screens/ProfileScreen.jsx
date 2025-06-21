@@ -3,8 +3,14 @@ import { View, Text, StyleSheet, ScrollView, SafeAreaView, TouchableOpacity } fr
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useAuth } from '../contexts/AuthContext';
 
+const formatMoney = (value) => {
+  if (value === undefined || value === null) return 'Chưa cập nhật';
+  const numericValue = Math.round(Number(value));
+  return numericValue.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+};
+
 const ProfileScreen = ({ navigation }) => {
-  const { user } = useAuth();
+  const { user, membershipStatus } = useAuth();
 
   if (!user) {
     return (
@@ -67,9 +73,9 @@ const ProfileScreen = ({ navigation }) => {
             </TouchableOpacity>
           </View>
           {renderInfoRow('MaterialCommunityIcons', 'smoke', 'Số điếu thuốc tránh được', `${cigarettesAvoided} điếu`)}
-          {renderInfoRow('MaterialCommunityIcons', 'cash-multiple', 'Tiền tiết kiệm được', `${moneySaved.toLocaleString()} VND`)}
+          {renderInfoRow('MaterialCommunityIcons', 'cash-multiple', 'Tiền tiết kiệm được', `${formatMoney(moneySaved)} VNĐ`)}
           {renderInfoRow('MaterialCommunityIcons', 'numeric', 'Số điếu mỗi ngày trước đây', user.smokingData?.cigaretteCount ? `${user.smokingData.cigaretteCount} điếu` : 'Chưa cập nhật')}
-          {renderInfoRow('MaterialCommunityIcons', 'currency-usd', 'Giá 1 bao thuốc trước đây', user.smokingData?.pricePerPack ? `${user.smokingData.pricePerPack.toLocaleString()} VND` : 'Chưa cập nhật')}
+          {renderInfoRow('MaterialCommunityIcons', 'currency-usd', 'Giá 1 bao thuốc trước đây', user.smokingData?.pricePerPack ? `${formatMoney(user.smokingData.pricePerPack)} VNĐ` : 'Chưa cập nhật')}
           {renderInfoRow('MaterialCommunityIcons', 'package-variant', 'Số gói mỗi tuần', user.smokingData?.packsPerWeek ? `${user.smokingData.packsPerWeek} gói` : 'Chưa cập nhật')}
           {renderInfoRow('MaterialCommunityIcons', 'speedometer', 'Tần suất hút', user.smokingData?.suctionFrequency ? 
             user.smokingData.suctionFrequency === 'light' ? 'Nhẹ' :
@@ -80,10 +86,39 @@ const ProfileScreen = ({ navigation }) => {
 
         <View style={styles.card}>
           <Text style={styles.cardTitle}>Gói thành viên</Text>
-          {renderInfoRow('Ionicons', 'star-outline', 'Trạng thái gói', user.membershipStatus?.package_name ? `${user.membershipStatus.package_name.toUpperCase()}` : 'Chưa có gói')}
-          {user.membershipStatus?.end_date && renderInfoRow('MaterialCommunityIcons', 'calendar-check-outline', 'Ngày hết hạn', new Date(user.membershipStatus.end_date).toLocaleDateString())}
-          <TouchableOpacity style={styles.membershipButton} onPress={() => navigation.navigate('MembershipPackage')}>
-            <Text style={styles.membershipButtonText}>Xem/Nâng cấp gói</Text>
+          {membershipStatus && membershipStatus.status === 'active' ? (
+            <>
+              {renderInfoRow(
+                'Ionicons',
+                'star',
+                'Trạng thái gói',
+                membershipStatus.package_name ? membershipStatus.package_name.toUpperCase() : 'Pro'
+              )}
+              {renderInfoRow(
+                'MaterialCommunityIcons',
+                'calendar-check',
+                'Ngày hết hạn',
+                new Date(membershipStatus.expire_date).toLocaleDateString('vi-VN')
+              )}
+            </>
+          ) : (
+            renderInfoRow('Ionicons', 'star-outline', 'Trạng thái gói', 'Chưa có gói')
+          )}
+          
+          <TouchableOpacity 
+            style={styles.membershipButton} 
+            onPress={() => navigation.navigate('MembershipPackage')}
+          >
+            <Text style={styles.membershipButtonText}>
+              {membershipStatus && membershipStatus.status === 'active' ? 'Quản lý gói' : 'Xem/Nâng cấp gói'}
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity 
+            style={styles.historyButton} 
+            onPress={() => navigation.navigate('TransactionsScreen')}
+          >
+            <Text style={styles.historyButtonText}>Lịch sử giao dịch</Text>
           </TouchableOpacity>
         </View>
 
@@ -178,6 +213,20 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.2,
     shadowRadius: 8,
     elevation: 3,
+  },
+  historyButton: {
+    backgroundColor: 'transparent',
+    paddingVertical: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+    marginTop: 10,
+    borderWidth: 1,
+    borderColor: 'green',
+  },
+  historyButtonText: {
+    color: 'green',
+    fontSize: 16,
+    fontWeight: '600',
   },
   membershipButtonText: {
     color: '#FFFFFF',

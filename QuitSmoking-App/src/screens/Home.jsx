@@ -3,9 +3,9 @@ import { StyleSheet, Text, View, SafeAreaView, ScrollView, TouchableOpacity, But
 import { AntDesign, FontAwesome, MaterialCommunityIcons, Ionicons } from '@expo/vector-icons';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { useEffect, useState, useCallback } from 'react';
-import { getAllBadges } from '../api';
+import { getAllBadges } from '../api/badges';
 import { getQuitPlanSummary, fetchQuitPlan } from '../api/quitPlan';
-import { fetchUserProgress, fetchSmokingStatus } from '../api';
+import { fetchUserProgress, fetchSmokingStatus } from '../api/user';
 import { getProgressByStage, getTotalCigarettesInPeriod, getTotalMoneySpentInPeriod } from '../api/progressTracking';
 import AppHeader from '../components/AppHeader';
 import HomeHeaderAndProgressCard from '../components/HomeHeaderAndProgressCard';

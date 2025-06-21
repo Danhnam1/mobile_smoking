@@ -4,7 +4,7 @@ import { Ionicons, MaterialCommunityIcons, FontAwesome } from '@expo/vector-icon
 import { getQuitPlanStages, getQuitPlanSummary } from '../api/quitPlan';
 import { recordProgress, getProgressByStage } from '../api/progressTracking';
 import { useAuth } from '../contexts/AuthContext';
-import { fetchQuitPlan } from '../api'; // Import fetchQuitPlan
+import { fetchQuitPlan } from '../api/quitPlan'; // Import fetchQuitPlan
 
 const QuitStage = ({ navigation, route }) => {
   const [currentPlanId, setCurrentPlanId] = useState(null); // New state to hold the planId

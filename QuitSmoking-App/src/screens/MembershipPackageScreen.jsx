@@ -1,13 +1,14 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator, Alert, Modal, Platform, Dimensions, Linking } from 'react-native';
 import { Ionicons, MaterialCommunityIcons, MaterialIcons, FontAwesome } from '@expo/vector-icons';
-import { getMembershipPackages, createPayment, createPayPalOrder, capturePayPalOrder, getPayPalPaymentStatus } from '../api';
+import { getMembershipPackages } from '../api/user';
 import { Picker } from '@react-native-picker/picker';
 import { WebView } from 'react-native-webview';
 import { useAuth } from '../contexts/AuthContext';
 import { useFocusEffect } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import queryString from 'query-string';
+import { usePayment } from '../hooks/usePayment';
 
 const { width, height } = Dimensions.get('window');
 
@@ -15,67 +16,27 @@ const MembershipPackageScreen = ({ navigation, route }) => {
     const [packages, setPackages] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
-    const [isPaymentModalVisible, setPaymentModalVisible] = useState(false);
-    const [selectedPackageForPayment, setSelectedPackageForPayment] = useState(null);
-    const [selectedPaymentMethod, setSelectedPaymentMethod] = useState('paypal');
-    const [currentPayPalOrderId, setCurrentPayPalOrderId] = useState(null);
+    
+    const { token } = useAuth();
+    const {
+        isPaymentModalVisible,
+        setPaymentModalVisible,
+        selectedPackageForPayment,
+        openPaymentModal,
+        selectedPaymentMethod,
+        setSelectedPaymentMethod,
+        handleSubscribe,
+        isProcessing,
+    } = usePayment(navigation);
 
-    const { user, token, updateMembershipStatus } = useAuth();
+    const { user, updateMembershipStatus } = useAuth();
 
     const userId = user?._id;
     const userToken = token;
 
-    // Functions to handle AsyncStorage for payment status
-    const savePaymentOrder = async (orderId, packageData) => {
-        try {
-            const paymentData = {
-                orderId,
-                packageData,
-                timestamp: new Date().toISOString(),
-                userId
-            };
-            await AsyncStorage.setItem('pendingPayPalOrder', JSON.stringify(paymentData));
-            console.log('Payment order saved to AsyncStorage:', orderId);
-        } catch (error) {
-            console.error('Error saving payment order to AsyncStorage:', error);
-        }
-    };
-
-    const loadPaymentOrder = async () => {
-        try {
-            const paymentData = await AsyncStorage.getItem('pendingPayPalOrder');
-            if (paymentData) {
-                const parsed = JSON.parse(paymentData);
-                // Only load if it's for the current user and not older than 24 hours
-                if (parsed.userId === userId && 
-                    new Date(parsed.timestamp) > new Date(Date.now() - 24 * 60 * 60 * 1000)) {
-                    setCurrentPayPalOrderId(parsed.orderId);
-                    setSelectedPackageForPayment(parsed.packageData);
-                    console.log('Loaded pending payment order from AsyncStorage:', parsed.orderId);
-                } else {
-                    // Clear old or invalid data
-                    await AsyncStorage.removeItem('pendingPayPalOrder');
-                }
-            }
-        } catch (error) {
-            console.error('Error loading payment order from AsyncStorage:', error);
-        }
-    };
-
-    const clearPaymentOrder = async () => {
-        try {
-            await AsyncStorage.removeItem('pendingPayPalOrder');
-            setCurrentPayPalOrderId(null);
-            console.log('Payment order cleared from AsyncStorage');
-        } catch (error) {
-            console.error('Error clearing payment order from AsyncStorage:', error);
-        }
-    };
-
     const fetchPackages = useCallback(async () => {
         if (!userToken) {
             console.log('fetchPackages: userToken is missing, cannot fetch packages.');
-            // Optionally, handle this by showing an error or redirecting
             return;
         }
         try {
@@ -98,256 +59,8 @@ const MembershipPackageScreen = ({ navigation, route }) => {
         console.log('MembershipPackageScreen: Token from AuthContext', token);
         if (userToken) {
             fetchPackages();
-            loadPaymentOrder(); // Load any pending payment orders
         }
     }, [user, token, fetchPackages]);
-
-    // useFocusEffect to check payment status when the screen is focused
-    useFocusEffect(
-        useCallback(() => {
-            if (currentPayPalOrderId && userToken && userId) {
-                console.log('Screen focused with pending PayPal order, checking status...');
-                // Add a small delay to ensure the app is fully loaded
-                const timer = setTimeout(() => {
-                    handleCheckPaymentStatus();
-                }, 1000);
-                
-                return () => clearTimeout(timer);
-            }
-        }, [currentPayPalOrderId, userToken, userId])
-    );
-
-    useEffect(() => {
-        const handleDeepLink = async (event) => {
-            const url = event.url;
-            if (url.startsWith('myapp://paypal-success')) {
-                // Lấy orderId từ url
-                const parsed = queryString.parseUrl(url);
-                const orderId = parsed.query.orderId;
-                if (orderId) {
-                    try {
-                        setLoading(true);
-                        const res = await capturePayPalOrder({ orderId }, userToken);
-                        Alert.alert('🎉 Thành công', 'Thanh toán thành công! Gói của bạn đã được kích hoạt.');
-                        await updateMembershipStatus({
-                            package_id: res.userMembership.package_id,
-                            package_name: 'pro',
-                            start_date: res.userMembership.payment_date,
-                            end_date: res.userMembership.expire_date
-                        });
-                        navigation.navigate('Main', { screen: 'HomeTab' });
-                    } catch (err) {
-                        Alert.alert('❌ Lỗi', 'Không xác nhận được thanh toán!');
-                    } finally {
-                        setLoading(false);
-                    }
-                }
-            }
-            if (url.startsWith('myapp://paypal-cancel')) {
-                Alert.alert('❌ Đã hủy', 'Bạn đã hủy thanh toán PayPal.');
-            }
-        };
-
-        Linking.addEventListener('url', handleDeepLink);
-        Linking.getInitialURL().then((url) => {
-            if (url) handleDeepLink({ url });
-        });
-        return () => Linking.removeEventListener('url', handleDeepLink);
-    }, [userToken]);
-
-    const initiatePayPalPayment = async (packageData, userToken, packageId) => {
-        try {
-            if (!packageData || !userToken || !packageId) {
-                throw new Error('Thiếu thông tin cần thiết để tạo đơn hàng PayPal');
-            }
-
-            console.log('Initiating PayPal payment with:', {
-                amount: packageData.price,
-                package_id: packageId,
-                userToken: userToken ? 'present' : 'missing'
-            });
-
-            const response = await createPayPalOrder({
-                package_id: packageId
-            }, userToken);
-
-            if (!response || !response.approveUrl || !response.orderId) {
-                throw new Error('Không nhận được URL xác nhận hoặc Order ID từ PayPal');
-            }
-
-            console.log('PayPal order created successfully:', {
-                orderId: response.orderId,
-                approveUrl: response.approveUrl
-            });
-            
-            setCurrentPayPalOrderId(response.orderId);
-            
-            // Save payment order to AsyncStorage
-            await savePaymentOrder(response.orderId, packageData);
-
-            Linking.openURL(response.approveUrl);
-            Alert.alert(
-                '🔄 Chuyển hướng đến PayPal', 
-                'Bạn sẽ được chuyển hướng đến PayPal để hoàn tất thanh toán.\n\nSau khi thanh toán xong, hãy quay lại ứng dụng để kiểm tra trạng thái và kích hoạt gói thành viên.',
-                [{ text: 'Đã hiểu' }]
-            );
-
-        } catch (err) {
-            console.error('PayPal payment error:', err);
-            Alert.alert(
-                'Lỗi PayPal',
-                err.message || 'Không thể tạo đơn hàng PayPal. Vui lòng thử lại sau.',
-                [{ text: 'OK' }]
-            );
-        }
-    };
-
-    const initiateMomoPayment = async (packageData, userToken, packageId) => {
-        Alert.alert(
-            'Thanh toán Momo',
-            'Bạn sẽ được chuyển hướng đến Momo để hoàn tất thanh toán. (Chức năng này cần tích hợp backend thực tế)',
-            [
-                { text: 'OK', onPress: () => navigation.navigate('Main', { screen: 'HomeTab' }) }
-            ]
-        );
-    };
-
-    const handleSubscribe = async () => {
-        console.log('handleSubscribe called');
-        console.log('handleSubscribe - selectedPackageForPayment:', selectedPackageForPayment);
-        console.log('handleSubscribe - userId:', userId);
-        console.log('handleSubscribe - userToken:', userToken);
-
-        if (!selectedPackageForPayment || !userId || !userToken) {
-            Alert.alert('Lỗi', 'Thông tin gói thành viên hoặc người dùng không hợp lệ.');
-            return;
-        }
-
-        try {
-            if (selectedPaymentMethod === 'paypal') {
-                setPaymentModalVisible(false);
-                console.log('Payment modal set to false before PayPal initiation.');
-                console.log('Calling initiatePayPalPayment...');
-                await initiatePayPalPayment(selectedPackageForPayment, userToken, selectedPackageForPayment._id);
-                console.log('initiatePayPalPayment finished.');
-            } else if (selectedPaymentMethod === 'momo') {
-                await initiateMomoPayment(selectedPackageForPayment, userToken, selectedPackageForPayment._id);
-                setPaymentModalVisible(false);
-                console.log('Payment modal set to false for Momo.');
-            }
-
-            await updateMembershipStatus({
-                package_id: selectedPackageForPayment._id,
-                package_name: selectedPackageForPayment.name,
-                start_date: new Date().toISOString(),
-                end_date: new Date(Date.now() + selectedPackageForPayment.duration_days * 24 * 60 * 60 * 1000).toISOString()
-            });
-
-        } catch (error) {
-            Alert.alert('Lỗi', error.message || 'Đăng ký gói thành viên thất bại!');
-            console.error('Error in handleSubscribe:', error);
-        }
-    };
-
-    const handleCheckPaymentStatus = async () => {
-        if (!currentPayPalOrderId || !userId || !userToken) {
-            console.log('No PayPal order to check or missing credentials');
-            return;
-        }
-
-        try {
-            console.log('Checking payment status for order:', currentPayPalOrderId);
-            
-            // Show loading indicator
-            Alert.alert('Đang kiểm tra', 'Vui lòng chờ trong giây lát...', [], { cancelable: false });
-            
-            const statusResponse = await getPayPalPaymentStatus(currentPayPalOrderId, userToken);
-            
-            console.log('Payment status response:', statusResponse);
-            
-            if (statusResponse && statusResponse.status) {
-                const status = statusResponse.status.toLowerCase();
-                
-                if (status === 'completed' || status === 'success') {
-                    // Payment successful
-                    Alert.alert(
-                        '🎉 Thanh toán thành công!',
-                        'Gói thành viên của bạn đã được kích hoạt. Bạn có thể sử dụng tất cả tính năng premium ngay bây giờ.',
-                        [
-                            { 
-                                text: 'Tuyệt vời!', 
-                                onPress: async () => {
-                                    // Update membership status in context
-                                    if (selectedPackageForPayment) {
-                                        updateMembershipStatus({
-                                            package_id: selectedPackageForPayment._id,
-                                            package_name: selectedPackageForPayment.name,
-                                            start_date: new Date().toISOString(),
-                                            end_date: new Date(Date.now() + selectedPackageForPayment.duration_days * 24 * 60 * 60 * 1000).toISOString()
-                                        });
-                                    }
-                                    await clearPaymentOrder();
-                                    navigation.navigate('Main', { screen: 'HomeTab' });
-                                }
-                            }
-                        ]
-                    );
-                } else if (status === 'pending' || status === 'processing') {
-                    // Payment still pending
-                    Alert.alert(
-                        '⏳ Thanh toán đang xử lý',
-                        'Thanh toán của bạn đang được xử lý. Vui lòng kiểm tra lại sau vài phút.',
-                        [
-                            { text: 'Kiểm tra lại', onPress: () => handleCheckPaymentStatus() },
-                            { text: 'Để sau', onPress: () => setCurrentPayPalOrderId(null) }
-                        ]
-                    );
-                } else if (status === 'failed' || status === 'cancelled' || status === 'denied') {
-                    // Payment failed
-                    Alert.alert(
-                        '❌ Thanh toán thất bại',
-                        'Thanh toán của bạn không thành công. Vui lòng thử lại hoặc chọn phương thức thanh toán khác.',
-                        [
-                            { text: 'Thử lại', onPress: async () => {
-                                await clearPaymentOrder();
-                                setPaymentModalVisible(true);
-                            }},
-                            { text: 'Để sau', onPress: async () => await clearPaymentOrder() }
-                        ]
-                    );
-                } else {
-                    // Unknown status
-                    Alert.alert(
-                        '❓ Trạng thái không xác định',
-                        `Trạng thái thanh toán: ${statusResponse.status}. Vui lòng liên hệ hỗ trợ nếu cần thiết.`,
-                        [
-                            { text: 'Kiểm tra lại', onPress: () => handleCheckPaymentStatus() },
-                            { text: 'Để sau', onPress: async () => await clearPaymentOrder() }
-                        ]
-                    );
-                }
-            } else {
-                Alert.alert(
-                    '⚠️ Không thể kiểm tra trạng thái',
-                    'Không nhận được thông tin trạng thái thanh toán. Vui lòng thử lại sau.',
-                    [
-                        { text: 'Thử lại', onPress: () => handleCheckPaymentStatus() },
-                        { text: 'Để sau', onPress: async () => await clearPaymentOrder() }
-                    ]
-                );
-            }
-        } catch (error) {
-            console.error('Error checking payment status:', error);
-            Alert.alert(
-                '❌ Lỗi kiểm tra trạng thái',
-                'Không thể kiểm tra trạng thái thanh toán. Vui lòng thử lại sau hoặc liên hệ hỗ trợ.',
-                [
-                    { text: 'Thử lại', onPress: () => handleCheckPaymentStatus() },
-                    { text: 'Để sau', onPress: async () => await clearPaymentOrder() }
-                ]
-            );
-        }
-    };
 
     const renderFeature = (iconName, text, isIncluded) => (
         <View style={styles.featureItem}>
@@ -431,8 +144,7 @@ const MembershipPackageScreen = ({ navigation, route }) => {
                         style={styles.selectButton}
                         onPress={() => {
                             if (pkg.name === 'pro') {
-                                setSelectedPackageForPayment(pkg);
-                                setPaymentModalVisible(true);
+                                openPaymentModal(pkg);
                             } else {
                                 navigation.navigate('Main', { screen: 'HomeTab' });
                             }
@@ -446,20 +158,6 @@ const MembershipPackageScreen = ({ navigation, route }) => {
             <TouchableOpacity style={styles.nextButton} onPress={() => navigation.navigate('Main', { screen: 'HomeTab' })}> 
                 <Text style={styles.nextButtonText}>Skip (Comback to Home)</Text>
             </TouchableOpacity>
-
-            {currentPayPalOrderId && (
-                <View style={styles.paymentStatusContainer}>
-                    <Text style={styles.paymentStatusText}>
-                        ⏳ Bạn có đơn hàng PayPal đang chờ xử lý
-                    </Text>
-                    <TouchableOpacity 
-                        style={styles.checkStatusButton}
-                        onPress={handleCheckPaymentStatus}
-                    >
-                        <Text style={styles.checkStatusButtonText}>Kiểm tra trạng thái thanh toán</Text>
-                    </TouchableOpacity>
-                </View>
-            )}
 
             <Modal
                 animationType="slide"
@@ -828,47 +526,6 @@ const styles = StyleSheet.create({
     linkText: {
         color: '#6C63FF',
         fontWeight: '700',
-    },
-    checkStatusButton: {
-        backgroundColor: '#6C63FF',
-        paddingVertical: 14,
-        paddingHorizontal: 30,
-        borderRadius: 14,
-        marginTop: 20,
-        width: '100%',
-        alignItems: 'center',
-        shadowColor: '#6C63FF',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.12,
-        shadowRadius: 5,
-        elevation: 2,
-    },
-    checkStatusButtonText: {
-        color: '#fff',
-        fontSize: 17,
-        fontWeight: '700',
-    },
-    paymentStatusContainer: {
-        backgroundColor: '#F0EFFF',
-        borderWidth: 1,
-        borderColor: '#E0E4F7',
-        borderRadius: 14,
-        padding: 18,
-        marginTop: 20,
-        marginBottom: 16,
-        alignItems: 'center',
-        shadowColor: '#6C63FF',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.08,
-        shadowRadius: 5,
-        elevation: 2,
-    },
-    paymentStatusText: {
-        fontSize: 16,
-        fontWeight: '700',
-        color: '#6C63FF',
-        textAlign: 'center',
-        marginBottom: 12,
     },
 });
 

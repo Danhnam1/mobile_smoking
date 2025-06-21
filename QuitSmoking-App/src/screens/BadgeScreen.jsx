@@ -3,7 +3,7 @@ import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Dimensions } from
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import Svg, { Circle } from 'react-native-svg';
 import { useAuth } from '../contexts/AuthContext';
-import { API_BASE_URL } from '../api/index';
+import { API_BASE_URL } from '../config/config';
 
 const { width } = Dimensions.get('window');
 

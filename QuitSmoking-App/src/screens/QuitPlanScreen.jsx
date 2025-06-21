@@ -2,7 +2,7 @@ import React, { useState, useContext, useEffect } from 'react';
 import { View, Text, TextInput, Button, StyleSheet, Alert, ScrollView, SafeAreaView, TouchableOpacity } from 'react-native';
 import { useAuth } from '../contexts/AuthContext';
 import { createQuitPlan, getSuggestedStages } from '../api/quitPlan';
-import { fetchSmokingStatus } from '../api';
+import { fetchSmokingStatus } from '../api/user';
 import { Ionicons } from '@expo/vector-icons';
 import DateTimePickerModal from "react-native-modal-datetime-picker";
 

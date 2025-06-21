@@ -4,7 +4,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons'; // Assuming icons a
 import ProgressByWeek from '../components/ProgressByWeek'; // Updated import path
 import { useAuth } from '../contexts/AuthContext';
 import { fetchQuitPlan, getQuitPlanSummary } from '../api/quitPlan';
-import { fetchSmokingStatus } from '../api';
+import { fetchSmokingStatus } from '../api/user';
 import { useFocusEffect } from '@react-navigation/native';
 
 const { width } = Dimensions.get('window');

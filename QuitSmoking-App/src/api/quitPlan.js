@@ -1,4 +1,4 @@
-import { API_BASE_URL } from './index';
+import { API_BASE_URL, ENDPOINTS } from '../config/config';
 
 // Helper to safely parse JSON only if content-type is application/json
 const safeParseJSON = async (response) => {
@@ -9,6 +9,14 @@ const safeParseJSON = async (response) => {
     const text = await response.text();
     throw new Error('Server returned non-JSON response: ' + text);
   }
+};
+
+// Helper function to handle API errors
+const handleApiError = (error) => {
+  if (error.message === 'Network request failed') {
+    throw new Error('Không thể kết nối đến máy chủ. Vui lòng kiểm tra kết nối mạng của bạn.');
+  }
+  throw error;
 };
 
 export const createQuitPlan = async (planData, token) => {
@@ -214,7 +222,7 @@ export const recordProgress = async (planId, stageId, progressData, token) => {
 
 export const getProgressByStage = async (planId, stageId, token) => {
   try {
-    const response = await fetch(`${API_BASE_URL}/quit-plans/${planId}/progress/${stageId}`, {
+    const response = await fetch(`${API_BASE_URL}/quit-plans/${planId}/stages/${stageId}/progress`, {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${token}`
@@ -232,7 +240,7 @@ export const getProgressByStage = async (planId, stageId, token) => {
 
 export const recordSmokingStatus = async (planId, stageId, statusData, token) => {
   try {
-    const response = await fetch(`${API_BASE_URL}/quit-plans/${planId}/smoking-status/${stageId}`, {
+    const response = await fetch(`${API_BASE_URL}/quit-plans/${planId}/stages/${stageId}/smoking-status`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -252,7 +260,7 @@ export const recordSmokingStatus = async (planId, stageId, statusData, token) =>
 
 export const getSmokingStatus = async (planId, stageId, token) => {
   try {
-    const response = await fetch(`${API_BASE_URL}/quit-plans/${planId}/smoking-status/${stageId}`, {
+    const response = await fetch(`${API_BASE_URL}/quit-plans/${planId}/stages/${stageId}/smoking-status`, {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${token}`
@@ -268,12 +276,51 @@ export const getSmokingStatus = async (planId, stageId, token) => {
   }
 };
 
+// Fetches the active quit plan for a user
 export const fetchQuitPlan = async (userId, token) => {
-  const response = await fetch(`${API_BASE_URL}/quit-plans/user/${userId}`, { headers: { Authorization: `Bearer ${token}` } });
-  if (!response.ok) {
-    throw await safeParseJSON(response);
+  try {
+    const headers = {};
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+
+    const response = await fetch(`${API_BASE_URL}/quit-plans/user/${userId}`, {
+      headers: headers,
+    });
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    // Assuming the API returns an array of plans, and we want the active one or the first one
+    const plans = await response.json();
+
+    // Find the active (ongoing) plan
+    const activePlan = plans.find(plan => plan.status === 'ongoing');
+    return activePlan || null; // Return the active plan or null
+  } catch (error) {
+    console.error(`Error fetching quit plan for user ${userId}:`, error);
+    handleApiError(error);
   }
-  const plans = await safeParseJSON(response);
-  // Trả về plan đầu tiên có status 'ongoing'
-  return plans.find(plan => plan.status === 'ongoing');
+};
+
+export const createSmokingStatus = async (planId, stageId, data) => {
+  try {
+    const endpoint = ENDPOINTS.SMOKINGSTATUS.RECORD_SMOKING
+      .replace(':planId', planId)
+      .replace(':stageId', stageId);
+
+    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data),
+    });
+    if (!response.ok) {
+      throw new Error('Failed to create smoking status');
+    }
+    return await response.json();
+  } catch (error) {
+    console.error('Error creating smoking status:', error);
+    handleApiError(error);
+  }
 }; 
