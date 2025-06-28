@@ -74,8 +74,7 @@ const QuitStage = ({ navigation, route }) => {
         const stageList = stagesResponse;
         setStagesData(stageList);
 
-        const vnNow = new Date(new Date().getTime() + 7 * 60 * 60 * 1000); // For Vietnam time
-        const today = new Date(vnNow);
+        const today = new Date();
         today.setHours(0, 0, 0, 0);
         const statusMap = {};
 
@@ -106,7 +105,6 @@ const QuitStage = ({ navigation, route }) => {
           })
         );
         setRecordedToday(statusMap);
-
       } else {
         setStagesData([]);
         console.warn('QuitStage: stagesResponse is not an array or is null/undefined.', stagesResponse);
@@ -237,10 +235,7 @@ const QuitStage = ({ navigation, route }) => {
           <Text style={styles.errorText}>{errorStages}</Text>
         ) : stagesData.length > 0 ? (
           stagesData.map((stage, index) => {
-            const now = new Date();
-            const vnNow = new Date(now.getTime() + 7 * 60 * 60 * 1000); // For Vietnam time
-
-            const today = new Date(vnNow);
+            const today = new Date();
             today.setHours(0, 0, 0, 0);
 
             const stageStart = new Date(stage.start_date);

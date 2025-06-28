@@ -129,7 +129,7 @@ export const createSmokingStatusInitial = async (data, token) => {
 // Fetches all available membership packages
 export const getMembershipPackages = async (token) => {
   try {
-    const response = await fetch(`${API_BASE_URL}${ENDPOINTS.MEMBERSHIP.PACKAGES}`, {
+    const response = await fetch(`${API_BASE_URL}${ENDPOINTS.MEMBERSHIP.GET_ALL_MEMBERSHIP}`, {
       headers: {
         'Authorization': `Bearer ${token}`
       },

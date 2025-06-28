@@ -77,9 +77,9 @@ const ProfileScreen = ({ navigation }) => {
           {renderInfoRow('MaterialCommunityIcons', 'numeric', 'Số điếu mỗi ngày trước đây', user.smokingData?.cigaretteCount ? `${user.smokingData.cigaretteCount} điếu` : 'Chưa cập nhật')}
           {renderInfoRow('MaterialCommunityIcons', 'currency-usd', 'Giá 1 bao thuốc trước đây', user.smokingData?.pricePerPack ? `${formatMoney(user.smokingData.pricePerPack)} VNĐ` : 'Chưa cập nhật')}
           {renderInfoRow('MaterialCommunityIcons', 'package-variant', 'Số gói mỗi tuần', user.smokingData?.packsPerWeek ? `${user.smokingData.packsPerWeek} gói` : 'Chưa cập nhật')}
-          {renderInfoRow('MaterialCommunityIcons', 'speedometer', 'Tần suất hút', user.smokingData?.suctionFrequency ? 
+          {renderInfoRow('MaterialCommunityIcons', 'speedometer', 'Tần suất hút', user.smokingData?.suctionFrequency ?
             user.smokingData.suctionFrequency === 'light' ? 'Nhẹ' :
-            user.smokingData.suctionFrequency === 'medium' ? 'Trung bình' : 'Nặng'
+              user.smokingData.suctionFrequency === 'medium' ? 'Trung bình' : 'Nặng'
             : 'Chưa cập nhật')}
           {user.smokingData?.healthNote && renderInfoRow('MaterialCommunityIcons', 'note-text-outline', 'Ghi chú sức khỏe', user.smokingData.healthNote)}
         </View>
@@ -104,18 +104,20 @@ const ProfileScreen = ({ navigation }) => {
           ) : (
             renderInfoRow('Ionicons', 'star-outline', 'Trạng thái gói', 'Chưa có gói')
           )}
-          
-          <TouchableOpacity 
-            style={styles.membershipButton} 
-            onPress={() => navigation.navigate('MembershipPackage')}
-          >
-            <Text style={styles.membershipButtonText}>
-              {membershipStatus && membershipStatus.status === 'active' ? 'Quản lý gói' : 'Xem/Nâng cấp gói'}
-            </Text>
-          </TouchableOpacity>
 
-          <TouchableOpacity 
-            style={styles.historyButton} 
+          {membershipStatus?.status !== 'active' && (
+            <TouchableOpacity
+              style={styles.membershipButton}
+              onPress={() => navigation.navigate('MembershipPackage')}
+            >
+              <Text style={styles.membershipButtonText}>
+                Xem/Nâng cấp gói
+              </Text>
+            </TouchableOpacity>
+          )}
+
+          <TouchableOpacity
+            style={styles.historyButton}
             onPress={() => navigation.navigate('TransactionsScreen')}
           >
             <Text style={styles.historyButtonText}>Lịch sử giao dịch</Text>
@@ -143,9 +145,9 @@ const styles = StyleSheet.create({
     marginBottom: 30,
   },
   title: {
-    textAlign:'center',
+    textAlign: 'center',
     fontSize: 28,
-    marginLeft:'30',
+    marginLeft: '30',
     fontWeight: '800',
     color: '#2C3E50',
   },
@@ -184,7 +186,7 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   infoIcon: {
-    color:'green',
+    color: 'green',
     marginRight: 10,
     width: 24,
     textAlign: 'center',
