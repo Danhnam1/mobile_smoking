@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, Alert } from 'react-native';
 import { useAuth } from '../contexts/AuthContext';
+import gardenTheme from '../const/gardenTheme';
+import { LinearGradient } from 'expo-linear-gradient';
 
 // Helper function to format ISO date string to DD/MM/YYYY
 const formatDateToDDMMYYYY = (isoString) => {
@@ -29,7 +31,7 @@ const parseDDMMYYYYToISO = (ddmmyyyyString) => {
 const UserDetailScreen = ({ navigation, route }) => {
   const { user, updateUserProfile } = useAuth();
   const [formData, setFormData] = useState({
-    fullName: user?.fullName || '',
+    fullName: user?.full_name || '',
     email: user?.email || '',
     dateOfBirth: formatDateToDDMMYYYY(user?.birth_date) || '',
     gender: user?.gender || '',
@@ -84,102 +86,126 @@ const UserDetailScreen = ({ navigation, route }) => {
   };
 
   return (
-    <ScrollView style={styles.container}>
-      <View style={styles.formContainer}>
-        <Text style={styles.title}>Thông tin cá nhân</Text>
-        
-        <View style={styles.inputGroup}>
-          <Text style={styles.label}>Họ và tên *</Text>
-          <TextInput
-            style={styles.input}
-            value={formData.fullName}
-            onChangeText={(value) => handleInputChange('fullName', value)}
-            placeholder="Nhập họ và tên"
-          />
+    <LinearGradient colors={[gardenTheme.colors.backgroundSoft, gardenTheme.colors.background]} style={styles.gradientBg}>
+      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+        <View style={styles.formContainer}>
+          <Text style={styles.title}>Thông tin cá nhân</Text>
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>Họ và tên *</Text>
+            <TextInput
+              style={styles.input}
+              value={formData.fullName}
+              onChangeText={(value) => handleInputChange('fullName', value)}
+              placeholder="Nhập họ và tên"
+              placeholderTextColor={gardenTheme.colors.textSecondary}
+            />
+          </View>
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>Email *</Text>
+            <TextInput
+              style={styles.input}
+              value={formData.email}
+              onChangeText={(value) => handleInputChange('email', value)}
+              placeholder="Nhập email"
+              keyboardType="email-address"
+              autoCapitalize="none"
+              placeholderTextColor={gardenTheme.colors.textSecondary}
+            />
+          </View>
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>Ngày sinh</Text>
+            <TextInput
+              style={styles.input}
+              value={formData.dateOfBirth}
+              onChangeText={(value) => handleInputChange('dateOfBirth', value)}
+              placeholder="DD/MM/YYYY"
+              placeholderTextColor={gardenTheme.colors.textSecondary}
+            />
+          </View>
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>Giới tính</Text>
+            <TextInput
+              style={styles.input}
+              value={formData.gender}
+              onChangeText={(value) => handleInputChange('gender', value)}
+              placeholder="Nhập giới tính"
+              placeholderTextColor={gardenTheme.colors.textSecondary}
+            />
+          </View>
+          <TouchableOpacity style={styles.submitButton} onPress={handleSubmit} activeOpacity={0.85}>
+            <LinearGradient colors={["#b9f6ca", "#43e97b"]} style={styles.submitButtonGradient}>
+              <Text style={styles.submitButtonText}>Lưu thông tin</Text>
+            </LinearGradient>
+          </TouchableOpacity>
         </View>
-
-        <View style={styles.inputGroup}>
-          <Text style={styles.label}>Email *</Text>
-          <TextInput
-            style={styles.input}
-            value={formData.email}
-            onChangeText={(value) => handleInputChange('email', value)}
-            placeholder="Nhập email"
-            keyboardType="email-address"
-            autoCapitalize="none"
-          />
-        </View>
-
-        <View style={styles.inputGroup}>
-          <Text style={styles.label}>Ngày sinh</Text>
-          <TextInput
-            style={styles.input}
-            value={formData.dateOfBirth}
-            onChangeText={(value) => handleInputChange('dateOfBirth', value)}
-            placeholder="DD/MM/YYYY"
-          />
-        </View>
-
-        <View style={styles.inputGroup}>
-          <Text style={styles.label}>Giới tính</Text>
-          <TextInput
-            style={styles.input}
-            value={formData.gender}
-            onChangeText={(value) => handleInputChange('gender', value)}
-            placeholder="Nhập giới tính"
-          />
-        </View>
-
-        <TouchableOpacity style={styles.submitButton} onPress={handleSubmit}>
-          <Text style={styles.submitButtonText}>Lưu thông tin</Text>
-        </TouchableOpacity>
-      </View>
-    </ScrollView>
+      </ScrollView>
+    </LinearGradient>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
+  gradientBg: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+  },
+  scrollContent: {
+    flexGrow: 1,
+    justifyContent: 'center',
+    paddingVertical: 32,
   },
   formContainer: {
-    padding: 20,
+    padding: 28,
+    backgroundColor: gardenTheme.colors.card,
+    borderRadius: gardenTheme.borderRadius.card,
+    ...gardenTheme.shadow.card,
+    margin: 18,
   },
   title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginBottom: 20,
-    color: '#333',
+    fontSize: 26,
+    fontWeight: gardenTheme.fontWeight.bold,
+    marginBottom: 28,
+    color: gardenTheme.colors.primary,
     textAlign: 'center',
+    letterSpacing: 0.5,
   },
   inputGroup: {
-    marginBottom: 15,
+    marginBottom: 22,
   },
   label: {
-    fontSize: 16,
-    marginBottom: 5,
-    color: '#333',
+    fontSize: 14,
+    marginBottom: 6,
+    color: gardenTheme.colors.textSecondary,
+    fontWeight: gardenTheme.fontWeight.medium,
   },
   input: {
-    backgroundColor: '#fff',
-    padding: 12,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#ddd',
+    backgroundColor: gardenTheme.colors.background,
+    padding: 14,
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: '#e0e0e0',
     fontSize: 16,
+    color: gardenTheme.colors.text,
   },
   submitButton: {
-    backgroundColor: '#4CAF50',
-    padding: 15,
-    borderRadius: 8,
-    marginTop: 20,
+    borderRadius: gardenTheme.borderRadius.button,
+    marginTop: 32,
+    overflow: 'hidden',
+    elevation: 3,
+    alignSelf: 'center',
+    width: '100%',
+  },
+  submitButtonGradient: {
+    paddingVertical: 16,
+    alignItems: 'center',
+    borderRadius: gardenTheme.borderRadius.button,
+    width: '100%',
   },
   submitButtonText: {
-    color: '#fff',
+    color: gardenTheme.colors.white,
     textAlign: 'center',
     fontSize: 18,
-    fontWeight: 'bold',
+    fontWeight: gardenTheme.fontWeight.bold,
+    letterSpacing: 0.5,
+    backgroundColor: 'transparent',
   },
 });
 

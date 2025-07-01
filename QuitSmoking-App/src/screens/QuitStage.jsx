@@ -5,6 +5,7 @@ import { getQuitPlanStages, getQuitPlanSummary } from '../api/quitPlan';
 import { recordProgress, getProgressByStage } from '../api/progressTracking';
 import { useAuth } from '../contexts/AuthContext';
 import { fetchQuitPlan } from '../api/quitPlan'; // Import fetchQuitPlan
+import { useFocusEffect } from '@react-navigation/native';
 
 const QuitStage = ({ navigation, route }) => {
   const [currentPlanId, setCurrentPlanId] = useState(null); // New state to hold the planId
@@ -162,8 +163,8 @@ const QuitStage = ({ navigation, route }) => {
       // Show success message
       Alert.alert('Thành công', 'Đã ghi nhận tiến trình của bạn');
     } catch (error) {
-      console.error('Error recording progress:', error);
-      Alert.alert('Lỗi', 'Không thể ghi nhận tiến trình. Vui lòng thử lại.');
+      
+      Alert.alert('Bạn đã ghi rồi', 'Không thể ghi nhận tiến trình. Vui lòng thử lại.');
     }
   };
 
@@ -172,6 +173,12 @@ const QuitStage = ({ navigation, route }) => {
     const date = new Date(dateStr);
     return date.toLocaleDateString('vi-VN');
   };
+
+  useFocusEffect(
+    useCallback(() => {
+      fetchStagesAndSummary();
+    }, [fetchStagesAndSummary])
+  );
 
   return (
     <SafeAreaView style={styles.container}>

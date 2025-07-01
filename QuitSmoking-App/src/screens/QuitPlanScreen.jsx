@@ -35,8 +35,6 @@ const QuitPlanScreen = ({ navigation }) => {
             setSuggestedStages(stages.suggested_stages);
           }
         } catch (error) {
-          console.error('Failed to load data:', error);
-          Alert.alert('Error', 'Could not load required data. Please try again.');
         }
       }
     };
@@ -111,7 +109,7 @@ const QuitPlanScreen = ({ navigation }) => {
 
       const response = await createQuitPlan(planData, token);
       Alert.alert('Success', 'Quit Plan created successfully!');
-      navigation.navigate('QuitStage', { screen: 'QuitStage', params: { planId: response.plan._id } });
+      navigation.navigate('Main', { screen: 'QuitStage', params: { planId: response.plan._id } });
     } catch (error) {
       console.error('Failed to create quit plan:', error);
       Alert.alert('Error', error.message || 'Failed to create quit plan. Please try again.');
@@ -164,6 +162,7 @@ const QuitPlanScreen = ({ navigation }) => {
             mode="date"
             onConfirm={handleConfirm}
             onCancel={hideDatePicker}
+            minimumDate={new Date()}
           />
 
           <Text style={styles.label}>End Date</Text>
@@ -184,40 +183,7 @@ const QuitPlanScreen = ({ navigation }) => {
             numberOfLines={4}
           />
 
-          <Text style={styles.label}>Reasons to Quit</Text>
-          {reasons.map((reason, index) => (
-            <View key={index} style={styles.reasonContainer}>
-              <TextInput
-                style={[styles.input, styles.reasonInput]}
-                placeholder={`Reason ${index + 1}`}
-                value={reason}
-                onChangeText={(text) => updateReason(text, index)}
-              />
-              {reasons.length > 1 && (
-                <TouchableOpacity 
-                  style={styles.removeButton}
-                  onPress={() => removeReason(index)}
-                >
-                  <Ionicons name="close-circle" size={24} color="#FF3B30" />
-                </TouchableOpacity>
-              )}
-            </View>
-          ))}
-          <TouchableOpacity style={styles.addButton} onPress={addReason}>
-            <Ionicons name="add-circle-outline" size={24} color="#4CAF50" />
-            <Text style={styles.addButtonText}>Add Another Reason</Text>
-          </TouchableOpacity>
-
-          <Text style={styles.label}>Detailed Reasons</Text>
-          <TextInput
-            style={[styles.input, styles.textArea]}
-            placeholder="Explain your reasons in detail"
-            value={reasonsDetail}
-            onChangeText={setReasonsDetail}
-            multiline
-            numberOfLines={4}
-          />
-
+          
           <TouchableOpacity 
             style={[styles.submitButton, loading && styles.submitButtonDisabled]}
             onPress={handleCreateQuitPlan}

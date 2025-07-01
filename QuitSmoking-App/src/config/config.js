@@ -10,10 +10,7 @@ export const API_BASE_URL = Platform.OS === 'android'
   ? 'http://10.0.2.2:3000/api' // Special address for Android Emulator
   : `http://${LOCAL_IP_ADDRESS}:3000/api`; // Local IP for iOS and physical devices
 
-// API Configuration
-// export const API_URL = 'http://10.0.2.2:3000/api'; // Development (for Android Emulator)
-// export const API_URL = 'http://YOUR_LOCAL_IP:3000/api'; // Development (for physical device or other emulators)
-// export const API_URL = 'https://your-production-api.com/api'; // Production
+
 
 // Other configurations
 export const APP_CONFIG = {
