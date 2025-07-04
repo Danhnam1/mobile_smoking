@@ -48,17 +48,23 @@ export const register = async (data) => {
 };
 
 export const loginWithGoogle = async (idToken) => {
-  try {
-    const response = await fetch(`${API_BASE_URL}/auth/google`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ idToken }),
-    });
-    if (!response.ok) {
-      throw new Error('Đăng nhập Google thất bại!');
-    }
-    return await response.json();
-  } catch (error) {
-    handleApiError(error);
-  }
+  const res = await fetch(`${API_BASE_URL}/auth/login/google`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ idToken }),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Google login failed');
+  return data;
+};
+
+export const forgotPassword = async (email) => {
+  const res = await fetch(`${API_BASE_URL}/auth/forgot-password`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email }),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Gửi email thất bại');
+  return data;
 }; 

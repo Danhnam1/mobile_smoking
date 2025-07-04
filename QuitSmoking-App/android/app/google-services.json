@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "894694850190",
+    "project_id": "quit-smoking-77386",
+    "storage_bucket": "quit-smoking-77386.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:894694850190:android:a027a2a5beec650661d3df",
+        "android_client_info": {
+          "package_name": "com.yourcompany.quitsmokingapp"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "894694850190-nb02amuofg14v0iscnj9tcrah7nkapb9.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.yourcompany.quitsmokingapp",
+            "certificate_hash": "5e8f16062ea3cd2c4a0d547876baa6f38cabf625"
+          }
+        },
+        {
+          "client_id": "894694850190-r6vosftketmngbivqk7c7321ubdvsk0j.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAWNHmUXRgkY7_ARyWGOOFHUvi6T2mVW_0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "894694850190-r6vosftketmngbivqk7c7321ubdvsk0j.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

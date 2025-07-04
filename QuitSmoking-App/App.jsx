@@ -25,6 +25,7 @@ import './src/config/firebase';
 import CheckoutScreen from './src/screens/CheckoutScreen';
 import PayPalWebViewScreen from './src/screens/PayPalWebViewScreen';
 import TransactionsScreen from './src/screens/TransactionsScreen';
+import ForgotPasswordScreen from './src/screens/ForgotPasswordScreen';
 
 
 const Tab = createBottomTabNavigator();
@@ -89,6 +90,7 @@ function Navigation() {
       <Stack.Screen name="Welcome" component={WelcomeScreen} />
       <Stack.Screen name="LoginScreen" component={LoginScreen} />
       <Stack.Screen name="RegisterScreen" component={RegisterScreen} />
+      <Stack.Screen name="ForgotPasswordScreen" component={ForgotPasswordScreen} />
 
       {/* Main App Screens & Setup/Profile Edit Screens (always accessible once logged in) */}
       <Stack.Screen name="Main" component={MainTabNavigator} />
