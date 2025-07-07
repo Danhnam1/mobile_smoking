@@ -1,17 +1,16 @@
 import { Platform } from 'react-native';
-
 // Define the local IP address for development on physical devices.
 // Replace this with your computer's local IP address.
-const LOCAL_IP_ADDRESS = '192.168.100.7'; // EXAMPLE: '192.168.1.100'
+export const LOCAL_IP_ADDRESS = '192.168.100.147'; // EXAMPLE: '192.168.1.100'
 
-// Define and export the base URL for the API.
-// This handles the difference between Android Emulator and other environments.
+// // Define and export the base URL for the API.
+// // This handles the difference between Android Emulator and other environments.
 export const API_BASE_URL = Platform.OS === 'android'
   ? 'http://10.0.2.2:3000/api' // Special address for Android Emulator
   : `http://${LOCAL_IP_ADDRESS}:3000/api`; // Local IP for iOS and physical devices
 
 
-
+// export const API_BASE_URL = 'http://localhost:3000/api';
 // Other configurations
 export const APP_CONFIG = {
     VERSION: '1.0.0',
@@ -77,7 +76,10 @@ export const ENDPOINTS = {
       ACCEPT_PAYPAL: "/payments/paypal/capture",
       GET_FOR_USER: "/transactions/me",
       GET_ALL_TRANSACTION: "/admin/transactions"
-    }
+    },
+    COMMUNITY: {
+        MESSAGES: "/community/messages"
+      },
 };
 
 // This structure mirrors the web application's API constants.

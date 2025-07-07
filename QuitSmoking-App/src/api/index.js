@@ -8,3 +8,4 @@ export * from './badges';
 // export * from './payment'; // This was deleted in the refactoring
 export * from './quitPlan';
 export * from './progressTracking';
+export * from './community';

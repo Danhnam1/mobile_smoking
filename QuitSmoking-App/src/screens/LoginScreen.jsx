@@ -1,19 +1,23 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ActivityIndicator } from 'react-native';
 import { login } from '../api/auth';
 import { useAuth } from '../contexts/AuthContext';
-
+import { LOCAL_IP_ADDRESS } from '../config/config';
 const LoginScreen = ({ navigation }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const { saveUserData } = useAuth();
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleLogin = async () => {
     console.log('Attempting to log in...', { email, password });
+    console.log('LOCAL_IP_ADDRESS', LOCAL_IP_ADDRESS);
     if (!email || !password) {
       Alert.alert('Lỗi', 'Vui lòng nhập đầy đủ thông tin');
       return;
     }
+    setIsLoading(true);
+
     try {
       console.log('Calling login API...');
       const res = await login(email, password);
@@ -29,6 +33,9 @@ const LoginScreen = ({ navigation }) => {
     } catch (error) {
       console.error('Login failed in handleLogin:', error);
       Alert.alert('Đăng nhập thất bại', error.message);
+    }
+    finally {
+      setIsLoading(false);
     }
   };
 
@@ -50,10 +57,22 @@ const LoginScreen = ({ navigation }) => {
         onChangeText={setPassword}
         secureTextEntry
       />
-      <TouchableOpacity style={styles.button} onPress={handleLogin}>
-        <Text style={styles.buttonText}>Đăng nhập</Text>
+      <TouchableOpacity
+        style={[styles.button, isLoading && styles.buttonDisabled]}
+        onPress={handleLogin}
+        disabled={isLoading}
+      >
+        {isLoading ? (
+          <ActivityIndicator color="#fff" />
+        ) : (
+          <Text style={styles.buttonText}>Đăng nhập</Text>
+        )}
       </TouchableOpacity>
-      <TouchableOpacity style={styles.linkButton} onPress={() => navigation.navigate('RegisterScreen')}>
+      <TouchableOpacity
+        style={styles.linkButton}
+        onPress={() => navigation.navigate('RegisterScreen')}
+        disabled={isLoading}
+      >
         <Text style={styles.linkText}>Chưa có tài khoản? Đăng ký</Text>
       </TouchableOpacity>
     </View>
@@ -92,6 +111,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: 8,
   },
+  buttonDisabled: {
+    backgroundColor: '#A5D6A7',
+  },
   buttonText: {
     color: '#fff',
     fontSize: 18,
@@ -109,4 +131,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default LoginScreen; 
+export default LoginScreen;

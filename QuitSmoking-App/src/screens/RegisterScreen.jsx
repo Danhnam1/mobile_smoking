@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 import { register } from '../api/auth';
+import React, { useState } from 'react';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, Platform } from 'react-native';
+import DropDownPicker from 'react-native-dropdown-picker';
 
 const RegisterScreen = ({ navigation }) => {
   const [username, setUsername] = useState('');
@@ -9,31 +10,72 @@ const RegisterScreen = ({ navigation }) => {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [fullName, setFullName] = useState('');
   const [birthDate, setBirthDate] = useState('');
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [open, setOpen] = useState(false);
   const [gender, setGender] = useState('');
+  const [genderItems, setGenderItems] = useState([
+    { label: 'Nam', value: 'nam' },
+    { label: 'Nữ', value: 'nữ' },
+    { label: 'Khác', value: 'khác' },
+  ]);
 
   const handleRegister = async () => {
     if (!username || !email || !password || !confirmPassword || !fullName || !birthDate || !gender) {
       Alert.alert('Lỗi', 'Vui lòng nhập đầy đủ thông tin');
       return;
     }
+    // Kiểm tra định dạng ngày sinh DD/MM/YYYY
+    const dateRegex = /^([0-2][0-9]|3[0-1])\/(0[1-9]|1[0-2])\/\d{4}$/;
+    if (!dateRegex.test(birthDate)) {
+      Alert.alert('Lỗi', 'Ngày sinh phải theo định dạng DD/MM/YYYY');
+      return;
+    }
+    // Chuyển sang yyyy-mm-dd
+    const [day, month, year] = birthDate.split('/');
+    const birthDateForApi = `${year}-${month}-${day}T00:00:00.000+00:00`;
+    console.log(birthDateForApi);
     if (password !== confirmPassword) {
       Alert.alert('Lỗi', 'Mật khẩu xác nhận không khớp');
       return;
     }
     try {
+      console.log('Calling register API...');
       await register({
         username,
         email,
         password,
         full_name: fullName,
-        birth_date: birthDate,
+        birth_date: birthDateForApi, // format YYYY-MM-DD
         gender,
       });
       Alert.alert('Thành công', 'Đăng ký thành công! Hãy đăng nhập.');
       navigation.replace('LoginScreen');
     } catch (error) {
       Alert.alert('Đăng ký thất bại', error.message);
+      console.log(error);
     }
+  };
+
+  const onChangeDate = (event, selectedDate) => {
+    setShowDatePicker(Platform.OS === 'ios');
+    if (selectedDate) setBirthDate(selectedDate.toISOString().split('T')[0]);
+  };
+
+  // Hàm format ngày sinh tự động
+  const handleBirthDateChange = (text) => {
+    // Chỉ lấy số
+    let cleaned = text.replace(/\D/g, '');
+    let formatted = '';
+    if (cleaned.length <= 2) {
+      formatted = cleaned;
+    } else if (cleaned.length <= 4) {
+      formatted = `${cleaned.slice(0,2)}/${cleaned.slice(2)}`;
+    } else if (cleaned.length <= 8) {
+      formatted = `${cleaned.slice(0,2)}/${cleaned.slice(2,4)}/${cleaned.slice(4,8)}`;
+    } else {
+      formatted = `${cleaned.slice(0,2)}/${cleaned.slice(2,4)}/${cleaned.slice(4,8)}`;
+    }
+    setBirthDate(formatted);
   };
 
   return (
@@ -61,15 +103,27 @@ const RegisterScreen = ({ navigation }) => {
       />
       <TextInput
         style={styles.input}
-        placeholder="Ngày sinh (YYYY-MM-DD)"
+        placeholder="Ngày sinh (DD/MM/YYYY)"
         value={birthDate}
-        onChangeText={setBirthDate}
+        onChangeText={handleBirthDateChange}
+        keyboardType="numeric"
+        maxLength={10}
       />
-      <TextInput
-        style={styles.input}
-        placeholder="Giới tính (nam/nữ)"
+      <DropDownPicker
+        open={open}
         value={gender}
-        onChangeText={setGender}
+        items={genderItems}
+        setOpen={setOpen}
+        setValue={setGender}
+        setItems={setGenderItems}
+        placeholder="Chọn giới tính..."
+        style={styles.input}
+        dropDownContainerStyle={{
+          borderColor: '#e0e0e0',
+          borderRadius: 8,
+        }}
+        textStyle={{ color: '#222', fontSize: 16 }}
+        placeholderStyle={{ color: '#888' }}
       />
       <TextInput
         style={styles.input}
@@ -119,6 +173,20 @@ const styles = StyleSheet.create({
     backgroundColor: '#fafafa',
     marginBottom: 16,
   },
+  pickerInput: {
+    width: '100%',
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+    borderRadius: 8,
+    padding: 12,
+    fontSize: 16,
+    backgroundColor: '#fafafa',
+    marginBottom: 16,
+  },
+  pickerContainer: {
+    width: '100%',
+    
+  },
   button: {
     width: '100%',
     backgroundColor: '#4ECB71',
@@ -144,4 +212,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default RegisterScreen; 
+export default RegisterScreen;
