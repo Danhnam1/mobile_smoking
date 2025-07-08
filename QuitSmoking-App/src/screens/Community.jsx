@@ -77,22 +77,19 @@ const Community = () => {
         key={msg.id || msg._id || index}
         style={[styles.message, isOwn && styles.ownMessage]}
       >
-        {msg.author_id ? (
-          <View style={styles.avatar}>
-            <Text style={styles.avatarText}>{avatarText}</Text>
-          </View>
-        ) : (
-          <View style={[styles.avatar, { backgroundColor: '#ccc' }]}>
-            <Text style={styles.avatarText}>?</Text>
-          </View>
-        )}
+        <View style={styles.avatar}>
+          <Text style={styles.avatarText}>{avatarText}</Text>
+        </View>
         <View style={styles.messageContent}>
           {msg.author_id && <Text style={styles.author}>{msg.author_id.full_name}</Text>}
-          <Text>{msg.content}</Text>
+          <View style={isOwn ? styles.ownBubble : styles.otherBubble}>
+            <Text style={styles.messageText}>{msg.content}</Text>
+          </View>
         </View>
       </View>
     );
   };
+  
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: '#fff' }}>
@@ -150,25 +147,119 @@ const Community = () => {
 };
 
 const styles = StyleSheet.create({
-  tabs: { flexDirection: 'row', backgroundColor: '#f0f0f0' },
-  tab: { flex: 1, padding: 12, alignItems: 'center' },
-  activeTab: { borderBottomWidth: 2, borderBottomColor: '#4ECB71' },
-  tabText: { color: '#888', fontWeight: 'bold' },
-  activeTabText: { color: '#4ECB71', fontWeight: 'bold' },
-  chatWrapper: { flex: 1, backgroundColor: '#fff' },
-  header: { height: 0 }, // giữ chỗ cho header cũ nếu cần
-  messages: { flex: 1, padding: 12 },
-  message: { flexDirection: 'row', marginBottom: 10, alignItems: 'flex-start' },
-  ownMessage: { alignSelf: 'flex-end', backgroundColor: '#e6ffe6', borderRadius: 8, padding: 4 },
-  avatar: { width: 32, height: 32, borderRadius: 16, backgroundColor: '#4ECB71', alignItems: 'center', justifyContent: 'center', marginRight: 8 },
-  avatarText: { color: '#fff', fontWeight: 'bold' },
-  messageContent: { flex: 1 },
-  author: { fontWeight: 'bold', marginBottom: 2 },
-  inputWrapper: { flexDirection: 'row', borderTopWidth: 1, borderColor: '#eee', padding: 8, backgroundColor: '#fafafa' },
-  input: { flex: 1, borderWidth: 1, borderColor: '#e0e0e0', borderRadius: 8, padding: 8, marginRight: 8, backgroundColor: '#fff' },
-  sendBtn: { backgroundColor: '#4ECB71', borderRadius: 8, paddingVertical: 8, paddingHorizontal: 16, justifyContent: 'center' },
-  sendBtnText: { color: '#fff', fontWeight: 'bold' },
-  coachWrapper: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  tabs: {
+    flexDirection: 'row',
+    backgroundColor: '#f0f0f0',
+  },
+  tab: {
+    flex: 1,
+    padding: 12,
+    alignItems: 'center',
+  },
+  activeTab: {
+    borderBottomWidth: 2,
+    borderBottomColor: '#4ECB71',
+  },
+  tabText: {
+    color: '#888',
+    fontWeight: 'bold',
+  },
+  activeTabText: {
+    color: '#4ECB71',
+    fontWeight: 'bold',
+  },
+  chatWrapper: {
+    flex: 1,
+    backgroundColor: '#f5f5f5',
+  },
+  header: {
+    height: 0,
+  },
+  messages: {
+    flex: 1,
+    paddingVertical: 12,
+    paddingHorizontal: 12,
+  },
+  message: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    marginVertical: 4,
+    maxWidth: '80%',
+  },
+  ownMessage: {
+    alignSelf: 'flex-end',
+    flexDirection: 'row-reverse',
+  },
+  avatar: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#4ECB71',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginHorizontal: 8,
+  },
+  avatarText: {
+    color: '#fff',
+    fontWeight: 'bold',
+  },
+  messageContent: {
+    flexShrink: 1,
+  },
+  author: {
+    fontWeight: 'bold',
+    marginBottom: 4,
+    fontSize: 14,
+    color: '#333',
+  },
+  otherBubble: {
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 16,
+    padding: 10,
+  },
+  ownBubble: {
+    backgroundColor: '#dbeafe',
+    borderRadius: 16,
+    padding: 10,
+  },
+  messageText: {
+    fontSize: 15,
+    color: '#111',
+  },
+  inputWrapper: {
+    flexDirection: 'row',
+    borderTopWidth: 1,
+    borderColor: '#ddd',
+    padding: 8,
+    backgroundColor: '#fff',
+  },
+  input: {
+    flex: 1,
+    borderWidth: 1,
+    borderColor: '#ccc',
+    borderRadius: 20,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    marginRight: 8,
+    backgroundColor: '#fff',
+  },
+  sendBtn: {
+    backgroundColor: '#4ECB71',
+    borderRadius: 20,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    justifyContent: 'center',
+  },
+  sendBtnText: {
+    color: '#fff',
+    fontWeight: 'bold',
+  },
+  coachWrapper: {
+    flex: 1,
+  },
 });
+
 
 export default Community;

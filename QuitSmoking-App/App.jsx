@@ -25,7 +25,7 @@ import './src/config/firebase';
 import CheckoutScreen from './src/screens/CheckoutScreen';
 import PayPalWebViewScreen from './src/screens/PayPalWebViewScreen';
 import TransactionsScreen from './src/screens/TransactionsScreen';
-
+import NotificationTab from './src/screens/NotificationTab';
 
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
@@ -52,6 +52,9 @@ function MainTabNavigator() {
           } else if (route.name === 'CommunityTab') {
             iconName = 'people-outline';
             return <Ionicons name={iconName} size={size} color={color} />;
+          } else if (route.name === 'NotificationTab') {
+            iconName = 'notifications-outline';
+            return <Ionicons name={iconName} size={size} color={color} />;
           } 
           return <Ionicons name={iconName} size={size} color={color} />;
         },
@@ -60,6 +63,8 @@ function MainTabNavigator() {
       <Tab.Screen name="HomeTab" component={Home} options={{ title: 'Home' }} />
       <Tab.Screen name="QuitStage" component={QuitStage} options={{ title: 'Quit Stage' }} />
       <Tab.Screen name="CommunityTab" component={Community} options={{ title: 'Community' }} />
+      <Tab.Screen name="NotificationTab" component={NotificationTab} options={{ title: 'Notification' }} />
+
       {/* <Tab.Screen name="ProfileTab" component={ProfileScreen} options={{ title: 'Profile' }} /> */}
     </Tab.Navigator>
   );

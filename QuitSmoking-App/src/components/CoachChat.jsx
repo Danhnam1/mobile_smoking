@@ -8,14 +8,15 @@ import Icon from "react-native-vector-icons/Feather";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useAuth } from '../contexts/AuthContext';
 
-const CoachChat = ({ userId }) => {
+const CoachChat = () => {
+  const { user, token } = useAuth();
+  const currentUserId = user?._id;
   const [messages, setMessages] = useState([]);
   const [sessionId, setSessionId] = useState(null);
   const [input, setInput] = useState("");
   const [showCall, setShowCall] = useState(false);
   const scrollViewRef = useRef(null);
   const socketRef = useRef(null);
-  const { user, token } = useAuth();
   const [setupError, setSetupError] = useState(false);
 
   useEffect(() => {
@@ -110,30 +111,42 @@ const CoachChat = ({ userId }) => {
             onContentSizeChange={() => scrollViewRef.current?.scrollToEnd({ animated: true })}
           >
             {messages.map((msg, idx) => {
-              const senderId = msg.user_id?._id || msg.user_id || msg.author?._id;
-              const senderName = msg.author?.full_name || msg.user_id?.full_name || "Coach";
-              const isOwn = String(senderId) === String(userId);
-              const avatar = getAvatarText(senderName);
-              return (
-                <View
-                  key={idx}
-                  style={[
-                    styles.message,
-                    isOwn ? styles.ownMessage : styles.otherMessage
-                  ]}
-                >
-                  <View style={styles.avatar}>
-                    <Text style={styles.avatarText}>{avatar}</Text>
-                  </View>
-                  <View style={styles.messageContent}>
-                    <Text style={styles.author}>{senderName}</Text>
-                    <View style={isOwn ? styles.ownBubble : styles.otherBubble}>
-                      <Text style={styles.messageText}>{msg.content}</Text>
-                    </View>
-                  </View>
-                </View>
-              );
-            })}
+  const senderId = 
+    (msg.user_id && (msg.user_id._id || msg.user_id)) ||
+    (msg.author && msg.author._id);
+
+  const senderName =
+    msg.author?.full_name ||
+    msg.user_id?.full_name ||
+    "Coach";
+
+  const isOwn = String(senderId) === String(currentUserId);
+
+  const avatar = getAvatarText(senderName);
+
+  return (
+    <View
+      key={idx}
+      style={[
+        styles.message,
+        isOwn ? styles.ownMessage : styles.otherMessage
+      ]}
+    >
+      <View style={styles.avatar}>
+        <Text style={styles.avatarText}>{avatar}</Text>
+      </View>
+      <View style={styles.messageContent}>
+        <Text style={styles.author}>{senderName}</Text>
+        <View style={isOwn ? styles.ownBubble : styles.otherBubble}>
+          <Text style={styles.messageText}>{msg.content}</Text>
+        </View>
+      </View>
+    </View>
+  );
+})}
+
+
+
           </ScrollView>
           <View style={styles.inputRow}>
             <TextInput
@@ -167,30 +180,151 @@ const CoachChat = ({ userId }) => {
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#fff", width: '100%' },
-  header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", padding: 16, backgroundColor: "#4f8cff", width: '100%' },
-  headerTitle: { color: "#fff", fontSize: 18, fontWeight: "bold" },
-  videoBtn: { flexDirection: "row", alignItems: "center", backgroundColor: "#2563eb", padding: 8, borderRadius: 6 },
-  videoBtnText: { color: "#fff", marginLeft: 6 },
-  messages: { flex: 1, padding: 16, width: '100%' },
-  message: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 10, width: '100%' },
-  ownMessage: { alignSelf: 'flex-end' },
-  otherMessage: { alignSelf: 'flex-start' },
-  avatar: { width: 32, height: 32, borderRadius: 16, backgroundColor: '#4ECB71', alignItems: 'center', justifyContent: 'center', marginRight: 8 },
-  avatarText: { color: '#fff', fontWeight: 'bold' },
-  messageContent: { flex: 1 },
-  author: { fontWeight: 'bold', marginBottom: 2 },
-  ownBubble: { backgroundColor: '#e0f7fa', borderRadius: 16, padding: 10, marginLeft: 30, marginRight: 0 },
-  otherBubble: { backgroundColor: '#fff', borderRadius: 16, padding: 10, marginRight: 30, marginLeft: 0, borderWidth: 1, borderColor: '#eee' },
-  messageText: { fontSize: 16 },
-  inputRow: { flexDirection: "row", alignItems: "center", padding: 8, borderTopWidth: 1, borderColor: "#eee", width: '100%' },
-  input: { flex: 1, borderWidth: 1, borderColor: "#ccc", borderRadius: 20, paddingHorizontal: 16, paddingVertical: 8, marginRight: 8 },
-  sendBtn: { backgroundColor: "#2563eb", paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20 },
-  sendBtnText: { color: "#fff", fontWeight: "bold" },
-  modalOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.7)", justifyContent: "center", alignItems: "center" },
-  modalContent: { width: "90%", height: "80%", backgroundColor: "#fff", borderRadius: 12, padding: 16, position: "relative" },
-  closeBtn: { position: "absolute", top: 10, right: 10, zIndex: 10, backgroundColor: "#ef4444", padding: 8, borderRadius: 8 },
-  closeBtnText: { color: "#fff", fontWeight: "bold" },
+  container: {
+    flex: 1,
+    backgroundColor: "#f5f5f5",
+    width: "100%",
+  },
+  header: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    padding: 16,
+    backgroundColor: "#4f8cff",
+    width: "100%",
+  },
+  headerTitle: {
+    color: "#fff",
+    fontSize: 18,
+    fontWeight: "bold",
+  },
+  videoBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#2563eb",
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    borderRadius: 6,
+  },
+  videoBtnText: {
+    color: "#fff",
+    marginLeft: 6,
+  },
+  messages: {
+    flex: 1,
+    paddingVertical: 12,
+    paddingHorizontal: 12,
+    width: "100%",
+  },
+  message: {
+    flexDirection: "row",
+    alignItems: "flex-end",
+    marginVertical: 4,
+    maxWidth: "80%",
+  },
+  ownMessage: {
+    alignSelf: "flex-end",
+  },
+  otherMessage: {
+    alignSelf: "flex-start",
+  },
+  avatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "#4ECB71",
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: 8,
+  },
+  avatarText: {
+    color: "#fff",
+    fontWeight: "bold",
+  },
+  messageContent: {
+    flexShrink: 1,
+  },
+  author: {
+    fontWeight: "bold",
+    marginBottom: 4,
+    color: "#333",
+    fontSize: 14,
+  },
+  ownBubble: {
+    backgroundColor: "#dbeafe",
+    borderRadius: 16,
+    padding: 10,
+  },
+  otherBubble: {
+    backgroundColor: "#fff",
+    borderWidth: 1,
+    borderColor: "#ddd",
+    borderRadius: 16,
+    padding: 10,
+  },
+  messageText: {
+    fontSize: 15,
+    color: "#111",
+  },
+  inputRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    padding: 8,
+    borderTopWidth: 1,
+    borderColor: "#ddd",
+    backgroundColor: "#fff",
+    width: "100%",
+  },
+  input: {
+    flex: 1,
+    borderWidth: 1,
+    borderColor: "#ccc",
+    borderRadius: 20,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    marginRight: 8,
+    backgroundColor: "#fff",
+  },
+  sendBtn: {
+    backgroundColor: "#2563eb",
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+  },
+  sendBtnText: {
+    color: "#fff",
+    fontWeight: "bold",
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.7)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  modalContent: {
+    width: "90%",
+    height: "80%",
+    backgroundColor: "#fff",
+    borderRadius: 12,
+    padding: 16,
+    position: "relative",
+  },
+  closeBtn: {
+    position: "absolute",
+    top: 10,
+    right: 10,
+    zIndex: 10,
+    backgroundColor: "#ef4444",
+    padding: 8,
+    borderRadius: 8,
+  },
+  closeBtnText: {
+    color: "#fff",
+    fontWeight: "bold",
+  },
 });
+
+
+
 
 export default CoachChat;

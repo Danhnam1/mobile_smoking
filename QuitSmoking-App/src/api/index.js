@@ -9,3 +9,4 @@ export * from './badges';
 export * from './quitPlan';
 export * from './progressTracking';
 export * from './community';
+export * from './notification'
