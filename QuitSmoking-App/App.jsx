@@ -26,48 +26,86 @@ import CheckoutScreen from './src/screens/CheckoutScreen';
 import PayPalWebViewScreen from './src/screens/PayPalWebViewScreen';
 import TransactionsScreen from './src/screens/TransactionsScreen';
 import NotificationTab from './src/screens/NotificationTab';
-
+import CoachDashboard from "./src/screens/DashBoard"
+import ChatListScreen from "./src/screens/ChatListScreen";
+import ChatDetailScreen from "./src/screens/ChatDetailScreen";
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
 
 function MainTabNavigator() {
-  return (
-    <Tab.Navigator
-      screenOptions={({ route }) => ({
-        headerShown: false,
-        tabBarActiveTintColor: '#4CAF50',
-        tabBarInactiveTintColor: 'gray',
-        tabBarStyle: styles.bottomNav,
-        tabBarIcon: ({ color, size }) => {
-          let iconName;
+  const { user } = useAuth();
+  const role = user?.role;
 
-          if (route.name === 'HomeTab') {
-            iconName = 'home';
+  if (role === 'coach') {
+    return (
+      <Tab.Navigator
+        screenOptions={({ route }) => ({
+          headerShown: false,
+          tabBarActiveTintColor: '#4CAF50',
+          tabBarInactiveTintColor: 'gray',
+          tabBarStyle: styles.bottomNav,
+          tabBarIcon: ({ color, size }) => {
+            let iconName;
+            if (route.name === 'Dashboard') {
+              iconName = 'view-dashboard-outline';
+              return <MaterialCommunityIcons name={iconName} size={size} color={color} />;
+            } else if (route.name === 'ChatMessage') {
+              iconName = 'chatbubbles-outline';
+              return <Ionicons name={iconName} size={size} color={color} />;
+            } else if (route.name === 'CoachQuitPlans') {
+              iconName = 'calendar-check-outline';
+              return <MaterialCommunityIcons name={iconName} size={size} color={color} />;
+            } else if (route.name === 'SettingsScreen') {
+              iconName = 'settings-outline';
+              return <Ionicons name={iconName} size={size} color={color} />;
+            }
             return <Ionicons name={iconName} size={size} color={color} />;
-          } else if (route.name === 'TrackProgressTab') {
-            iconName = 'progress-check';
-            return <AiOutlineSchedule name={iconName} size={size} color={color} />;
-          } else if (route.name === 'QuitStage') {
-            return <MaterialCommunityIcons name="calendar-clock-outline" size={size} color={color} />;
-          } else if (route.name === 'CommunityTab') {
-            iconName = 'people-outline';
+          },
+        })}
+      >
+        <Tab.Screen name="Dashboard" component={CoachDashboard} options={{ title: 'Dashboard' }} />
+        <Tab.Screen name="ChatMessage" component={ChatListScreen} options={{ title: 'Chat Message' }} />
+        <Tab.Screen name="CoachQuitPlans" component={QuitPlanScreen} options={{ title: 'Quit Plans' }} />
+        <Tab.Screen name="SettingsScreen" component={SettingsScreen} options={{ title: 'Setting' }} />
+      </Tab.Navigator>
+    );
+  }else if(role === 'member') {
+    return (
+      <Tab.Navigator
+        screenOptions={({ route }) => ({
+          headerShown: false,
+          tabBarActiveTintColor: '#4CAF50',
+          tabBarInactiveTintColor: 'gray',
+          tabBarStyle: styles.bottomNav,
+          tabBarIcon: ({ color, size }) => {
+            let iconName;
+  
+            if (route.name === 'HomeTab') {
+              iconName = 'home';
+              return <Ionicons name={iconName} size={size} color={color} />;
+            } else if (route.name === 'TrackProgressTab') {
+              iconName = 'progress-check';
+              return <AiOutlineSchedule name={iconName} size={size} color={color} />;
+            } else if (route.name === 'QuitStage') {
+              return <MaterialCommunityIcons name="calendar-clock-outline" size={size} color={color} />;
+            } else if (route.name === 'CommunityTab') {
+              iconName = 'people-outline';
+              return <Ionicons name={iconName} size={size} color={color} />;
+            } else if (route.name === 'NotificationTab') {
+              iconName = 'notifications-outline';
+              return <Ionicons name={iconName} size={size} color={color} />;
+            } 
             return <Ionicons name={iconName} size={size} color={color} />;
-          } else if (route.name === 'NotificationTab') {
-            iconName = 'notifications-outline';
-            return <Ionicons name={iconName} size={size} color={color} />;
-          } 
-          return <Ionicons name={iconName} size={size} color={color} />;
-        },
-      })}
-    >
-      <Tab.Screen name="HomeTab" component={Home} options={{ title: 'Home' }} />
-      <Tab.Screen name="QuitStage" component={QuitStage} options={{ title: 'Quit Stage' }} />
-      <Tab.Screen name="CommunityTab" component={Community} options={{ title: 'Community' }} />
-      <Tab.Screen name="NotificationTab" component={NotificationTab} options={{ title: 'Notification' }} />
-
-      {/* <Tab.Screen name="ProfileTab" component={ProfileScreen} options={{ title: 'Profile' }} /> */}
-    </Tab.Navigator>
-  );
+          },
+        })}
+      >
+        <Tab.Screen name="HomeTab" component={Home} options={{ title: 'Home' }} />
+        <Tab.Screen name="QuitStage" component={QuitStage} options={{ title: 'Quit Stage' }} />
+        <Tab.Screen name="CommunityTab" component={Community} options={{ title: 'Community' }} />
+        <Tab.Screen name="NotificationTab" component={NotificationTab} options={{ title: 'Notification' }} />
+      </Tab.Navigator>
+    );
+  }
 }
 
 function Navigation() {
@@ -81,11 +119,12 @@ function Navigation() {
     );
   }
 
-  // Determine the initial route name based on authentication and profile status
-  let initialRouteName = "Welcome"; // Default for not logged in
+  let initialRouteName;
 
-  if (user) {
-    initialRouteName = "Main"; // Luôn vào Home tab sau khi đăng nhập
+  if (!user) {
+    initialRouteName = "LoginScreen";
+  } else {
+    initialRouteName = "Main";
   }
 
   return (
@@ -110,7 +149,8 @@ function Navigation() {
       <Stack.Screen name="Checkout" component={CheckoutScreen} />
       <Stack.Screen name="PayPalWebView" component={PayPalWebViewScreen} />
       <Stack.Screen name="TransactionsScreen" component={TransactionsScreen} />
-
+      <Stack.Screen name="ChatList" component={ChatListScreen} />
+      <Stack.Screen name="ChatDetail" component={ChatDetailScreen} />
     </Stack.Navigator>
   );
 }

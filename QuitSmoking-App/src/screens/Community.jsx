@@ -68,27 +68,68 @@ const Community = () => {
   };
 
   const renderMessage = (msg, index) => {
-    const isOwn = msg.author_id && (msg.author_id.id === currentUserId || msg.author_id._id === currentUserId);
-    const avatarText = msg.author_id && msg.author_id.full_name
-      ? msg.author_id.full_name.split(' ').map(w => w[0]).join('').substring(0, 2).toUpperCase()
-      : '??';
+    const isOwn =
+      msg.author_id &&
+      (msg.author_id.id === currentUserId || msg.author_id._id === currentUserId);
+    const avatarText =
+      msg.author_id && msg.author_id.full_name
+        ? msg.author_id.full_name
+            .split(' ')
+            .map(w => w[0])
+            .join('')
+            .substring(0, 2)
+            .toUpperCase()
+        : '??';
+  
     return (
       <View
-        key={msg.id || msg._id || index}
-        style={[styles.message, isOwn && styles.ownMessage]}
-      >
-        <View style={styles.avatar}>
-          <Text style={styles.avatarText}>{avatarText}</Text>
-        </View>
-        <View style={styles.messageContent}>
-          {msg.author_id && <Text style={styles.author}>{msg.author_id.full_name}</Text>}
-          <View style={isOwn ? styles.ownBubble : styles.otherBubble}>
-            <Text style={styles.messageText}>{msg.content}</Text>
-          </View>
-        </View>
-      </View>
+  key={msg._id || index}
+  style={[
+    styles.messageRow,
+    isOwn ? styles.ownMessage : styles.otherMessage,
+  ]}
+>
+  {!isOwn && (
+    <View style={styles.avatar}>
+      <Text style={styles.avatarText}>{avatarText}</Text>
+    </View>
+  )}
+
+  <View style={{ flexShrink: 1 }}>
+    <View style={[
+      styles.messageBubble,
+      isOwn ? styles.ownBubble : styles.otherBubble,
+    ]}>
+      <Text style={styles.messageText}>{msg.content}</Text>
+    </View>
+    <Text
+      style={[
+        styles.timestamp,
+        { textAlign: isOwn ? "right" : "left" }
+      ]}
+    >
+      {msg.created_at
+        ? new Date(msg.created_at).toLocaleTimeString([], {
+            hour: "2-digit",
+            minute: "2-digit",
+          })
+        : "N/A"}
+    </Text>
+  </View>
+
+  {isOwn && (
+    <View style={styles.avatar}>
+      <Text style={styles.avatarText}>{avatarText}</Text>
+    </View>
+  )}
+</View>
+
+
+
     );
   };
+  
+  
   
 
   return (
@@ -186,10 +227,9 @@ const styles = StyleSheet.create({
     marginVertical: 4,
     maxWidth: '80%',
   },
-  ownMessage: {
-    alignSelf: 'flex-end',
-    flexDirection: 'row-reverse',
-  },
+  ownMessage: { alignSelf: "flex-end" },
+  otherMessage: { alignSelf: "flex-start" },
+
   avatar: {
     width: 36,
     height: 36,
@@ -258,6 +298,23 @@ const styles = StyleSheet.create({
   },
   coachWrapper: {
     flex: 1,
+  },
+  timestamp: {
+    fontSize: 10,
+    color: '#888',
+    marginTop: 4,
+  },
+  messageRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginVertical: 4,
+    maxWidth: '90%',
+  },
+  ownMessage: {
+    alignSelf: 'flex-end',
+  },
+  otherMessage: {
+    alignSelf: 'flex-start',
   },
 });
 

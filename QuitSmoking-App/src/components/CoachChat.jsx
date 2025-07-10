@@ -111,39 +111,68 @@ const CoachChat = () => {
             onContentSizeChange={() => scrollViewRef.current?.scrollToEnd({ animated: true })}
           >
             {messages.map((msg, idx) => {
-  const senderId = 
-    (msg.user_id && (msg.user_id._id || msg.user_id)) ||
-    (msg.author && msg.author._id);
+              const senderId =
+                (msg.user_id && (msg.user_id._id || msg.user_id)) ||
+                (msg.author && msg.author._id);
 
-  const senderName =
-    msg.author?.full_name ||
-    msg.user_id?.full_name ||
-    "Coach";
+              const senderName =
+                msg.author?.full_name ||
+                msg.user_id?.full_name ||
+                "Coach";
 
-  const isOwn = String(senderId) === String(currentUserId);
+              const isOwn = String(senderId) === String(currentUserId);
 
-  const avatar = getAvatarText(senderName);
+              const avatar = getAvatarText(senderName);
 
-  return (
+              return (
+<View
+  key={idx}
+  style={[
+    styles.messageRow,
+    isOwn ? styles.ownMessage : styles.otherMessage,
+  ]}
+>
+  {!isOwn && (
+    <View style={styles.avatar}>
+      <Text style={styles.avatarText}>{avatar}</Text>
+    </View>
+  )}
+
+  <View>
     <View
-      key={idx}
       style={[
-        styles.message,
-        isOwn ? styles.ownMessage : styles.otherMessage
+        styles.messageBubble,
+        isOwn ? styles.ownBubble : styles.otherBubble,
       ]}
     >
-      <View style={styles.avatar}>
-        <Text style={styles.avatarText}>{avatar}</Text>
-      </View>
-      <View style={styles.messageContent}>
-        <Text style={styles.author}>{senderName}</Text>
-        <View style={isOwn ? styles.ownBubble : styles.otherBubble}>
-          <Text style={styles.messageText}>{msg.content}</Text>
-        </View>
-      </View>
+      <Text style={styles.messageText}>{msg.content}</Text>
     </View>
+    <Text
+      style={[
+        styles.timestamp,
+        { textAlign: isOwn ? "right" : "left" },
+      ]}
+    >
+      {msg.sent_at
+        ? new Date(msg.sent_at).toLocaleTimeString([], {
+            hour: "2-digit",
+            minute: "2-digit",
+          })
+        : "N/A"}
+    </Text>
+  </View>
+
+  {isOwn && (
+    <View style={styles.avatar}>
+      <Text style={styles.avatarText}>{avatar}</Text>
+    </View>
+  )}
+</View>
+
   );
 })}
+
+
 
 
 
@@ -229,13 +258,13 @@ const styles = StyleSheet.create({
     alignSelf: "flex-start",
   },
   avatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     backgroundColor: "#4ECB71",
     alignItems: "center",
     justifyContent: "center",
-    marginRight: 8,
+    marginHorizontal: 6,
   },
   avatarText: {
     color: "#fff",
@@ -322,6 +351,19 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontWeight: "bold",
   },
+  timestamp: {
+    fontSize: 10,
+    color: "#888",
+    marginTop: 4,
+  },
+  messageRow: {
+    flexDirection: "row",
+    alignItems: "flex",
+    marginVertical: 4,
+    maxWidth: "90%",
+  },
+  ownMessage: { alignSelf: "flex-end"},
+  otherMessage: { alignSelf: "flex-start" },
 });
 
 
