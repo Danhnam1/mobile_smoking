@@ -7,17 +7,20 @@ import { LOCAL_IP_ADDRESS } from "../config/config";
 import Icon from "react-native-vector-icons/Feather";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useAuth } from '../contexts/AuthContext';
+import { useNavigation } from '@react-navigation/native';
 
 const CoachChat = () => {
   const { user, token } = useAuth();
   const currentUserId = user?._id;
   const [messages, setMessages] = useState([]);
+  const [session, setSession] = useState(null);
   const [sessionId, setSessionId] = useState(null);
   const [input, setInput] = useState("");
   const [showCall, setShowCall] = useState(false);
   const scrollViewRef = useRef(null);
   const socketRef = useRef(null);
   const [setupError, setSetupError] = useState(false);
+  const navigation = useNavigation();
 
   useEffect(() => {
     
@@ -31,6 +34,7 @@ const CoachChat = () => {
           return;
         }
         const sessionData = response.data; // SỬA Ở ĐÂY
+        setSession(sessionData); // Lưu object session
         const sid = sessionData._id;       // SỬA Ở ĐÂY
         if (!sid) {
           setSetupError(true);
@@ -91,7 +95,32 @@ const CoachChat = () => {
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Chat với Coach</Text>
         {!setupError && (
-          <TouchableOpacity style={styles.videoBtn} onPress={() => setShowCall(true)}>
+          <TouchableOpacity
+            style={styles.videoBtn}
+            onPress={() => {
+              const coachId = session?.coach_id?._id || session?.coach_id || user?._id;
+              let memberId = session?.user_id?._id || session?.user_id;
+              // Nếu chưa có, thử lấy từ messages
+              if (!memberId && messages.length > 0) {
+                for (let msg of messages) {
+                  const senderId = msg.user_id?._id || msg.user_id;
+                  if (String(senderId) !== String(coachId)) {
+                    memberId = senderId;
+                    break;
+                  }
+                }
+              }
+              if (coachId && memberId) {
+                const shortCoach = String(coachId).replace(/[^a-zA-Z0-9]/g, '').slice(-4);
+                const shortMember = String(memberId).replace(/[^a-zA-Z0-9]/g, '').slice(-4);
+                const roomName = `c${shortCoach}m${shortMember}`.toLowerCase(); // Đảm bảo luôn là chữ thường, không dấu cách
+                console.log('roomName truyền vào:', roomName);
+                navigation.navigate('VideoCallScreen', { roomName });
+              } else {
+                alert('Không tìm thấy coachId hoặc memberId!');
+              }
+            }}
+          >
             <Icon name="video" size={20} color="#fff" />
             <Text style={styles.videoBtnText}>Gọi video</Text>
           </TouchableOpacity>
@@ -191,19 +220,6 @@ const CoachChat = () => {
           </View>
         </>
       )}
-      <Modal visible={showCall} transparent animationType="slide">
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <TouchableOpacity
-              style={styles.closeBtn}
-              onPress={() => setShowCall(false)}
-            >
-              <Text style={styles.closeBtnText}>Đóng</Text>
-            </TouchableOpacity>
-            {/* <CoachVideoCall /> */}
-          </View>
-        </View>
-      </Modal>
     </View>
   );
 };
