@@ -17,13 +17,11 @@ const SmokingStatus = ({ navigation, route }) => {
 
     // Add console.log to inspect user and token when component mounts or re-renders
     React.useEffect(() => {
-        console.log('SmokingStatus: User object from AuthContext', user);
-        console.log('SmokingStatus: Token from AuthContext', token);
+        
     }, [user, token]);
 
     const handleSubmit = async () => {
-        console.log('handleSubmit: User object at submission', user);
-        console.log('handleSubmit: Token at submission', token);
+        
 
         if (!user || !token) {
             Alert.alert('Lỗi', 'Không tìm thấy ID người dùng hoặc token. Vui lòng đăng nhập lại.');

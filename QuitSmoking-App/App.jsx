@@ -29,6 +29,7 @@ import NotificationTab from './src/screens/NotificationTab';
 import CoachDashboard from "./src/screens/DashBoard"
 import ChatListScreen from "./src/screens/ChatListScreen";
 import ChatDetailScreen from "./src/screens/ChatDetailScreen";
+import VideoCallScreen from './src/screens/VideoCallScreen';
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
 
@@ -151,6 +152,7 @@ function Navigation() {
       <Stack.Screen name="TransactionsScreen" component={TransactionsScreen} />
       <Stack.Screen name="ChatList" component={ChatListScreen} />
       <Stack.Screen name="ChatDetail" component={ChatDetailScreen} />
+      <Stack.Screen name="VideoCallScreen" component={VideoCallScreen} options={{ headerShown: false }} />
     </Stack.Navigator>
   );
 }
