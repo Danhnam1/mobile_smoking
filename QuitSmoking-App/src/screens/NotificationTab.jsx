@@ -13,7 +13,8 @@ const NotificationTab = () => {
     setRefreshing(true);
     try {
       const res = await getAll(token);
-      setNotifications(res.data || []);
+      console.log("notidata>>>>", res)
+      setNotifications(res || []);
     } catch (err) {
       setNotifications([]);
     }
