@@ -20,7 +20,7 @@ const getAvatarText = (name = "") => {
     if (words.length === 1) return words[0][0].toUpperCase();
     return (words[0][0] + words[1][0]).toUpperCase();
   };
-export default function ChatDetailScreen({ route }) {
+export default function ChatDetailScreen({ route, navigation }) {
   const { session } = route.params;
   const { token, user } = useAuth();
   const currentUserId = user?._id;
@@ -78,8 +78,38 @@ export default function ChatDetailScreen({ route }) {
         {getAvatarText(session.user_id.full_name)}
       </Text>
     </View>
-    <Text style={styles.headerTitle}>{session.user_id.full_name}</Text>
-  </View>
+    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+  <Text style={styles.headerTitle}>{session.user_id?.full_name || 'Không rõ'}</Text>
+  <TouchableOpacity
+    style={{
+      marginLeft: 12,
+      backgroundColor: '#2563eb',
+      paddingHorizontal: 10,
+      paddingVertical: 6,
+      borderRadius: 6,
+      flexDirection: 'row',
+      alignItems: 'center'
+    }}
+    onPress={() => {
+      const coachId = session.coach_id?._id || session.coach_id || null;
+      const memberId = session.user_id?._id || session.user_id || null;
+      if (coachId && memberId) {
+        // Tạo roomName động: c<4 ký tự cuối coachId>m<4 ký tự cuối memberId>
+        const shortCoach = String(coachId).replace(/[^a-zA-Z0-9]/g, '').slice(-4);
+        const shortMember = String(memberId).replace(/[^a-zA-Z0-9]/g, '').slice(-4);
+        const roomName = `c${shortCoach}m${shortMember}`.toLowerCase();
+        console.log('roomName truyền vào:', roomName);
+        navigation.navigate('VideoCallScreen', { roomName });
+      } else {
+        alert('Không tìm thấy userId hoặc coachId!');
+      }
+    }}
+  >
+    <Icon name="video" size={18} color="#fff" />
+    <Text style={{ color: '#fff', marginLeft: 6 }}>Meeting</Text>
+  </TouchableOpacity>
+</View>
+</View>
 </View>
 
     {/* Messages */}
@@ -170,103 +200,148 @@ export default function ChatDetailScreen({ route }) {
 }
 
 const styles = StyleSheet.create({
-    headerContent: {
-        flexDirection: "row",
-        alignItems: "center",
-      },
-      headerAvatar: {
-        width: 36,
-        height: 36,
-        borderRadius: 18,
-        backgroundColor: "#4ECB71",
-        alignItems: "center",
-        justifyContent: "center",
-        marginRight: 8,
-      },
-      headerAvatarText: {
-        color: "#fff",
-        fontWeight: "bold",
-      },
+  container: {
+    flex: 1,
+    backgroundColor: '#f5f5f5',
+  },
   header: {
-    padding: 16,
-    backgroundColor: "#4f8cff",
+    paddingVertical: 18,
+    paddingHorizontal: 16,
+    backgroundColor: '#2563eb',
+    borderBottomLeftRadius: 18,
+    borderBottomRightRadius: 18,
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+  },
+  headerContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  headerAvatar: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#4ECB71',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+    borderWidth: 2,
+    borderColor: '#fff',
+  },
+  headerAvatarText: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 20,
   },
   headerTitle: {
-    color: "#fff",
-    fontSize: 18,
-    fontWeight: "bold",
+    color: '#fff',
+    fontSize: 20,
+    fontWeight: 'bold',
+    marginRight: 8,
+  },
+  videoBtn: {
+    marginLeft: 14,
+    backgroundColor: '#fff',
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+    borderRadius: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.08,
+    shadowRadius: 2,
+  },
+  videoBtnText: {
+    color: '#2563eb',
+    marginLeft: 6,
+    fontWeight: 'bold',
+    fontSize: 15,
   },
   messages: {
     flex: 1,
-    paddingVertical: 12,
-    paddingHorizontal: 12,
+    paddingVertical: 14,
+    paddingHorizontal: 10,
   },
-  message: {
-    marginVertical: 4,
-    maxWidth: "75%",
+  messageRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    marginVertical: 6,
+    maxWidth: '90%',
   },
-  ownMessage: { alignSelf: "flex-end" },
-  otherMessage: { alignSelf: "flex-start" },
+  ownMessage: {
+    alignSelf: 'flex-end',
+  },
+  otherMessage: {
+    alignSelf: 'flex-start',
+  },
+  avatar: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#4ECB71',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginHorizontal: 6,
+    borderWidth: 1.5,
+    borderColor: '#fff',
+  },
+  avatarText: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 16,
+  },
+  messageBubble: {
+    borderRadius: 18,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    maxWidth: 260,
+  },
   ownBubble: {
-    backgroundColor: "#dbeafe",
-    borderRadius: 16,
-    padding: 10,
+    backgroundColor: '#dbeafe',
   },
   otherBubble: {
-    backgroundColor: "#fff",
+    backgroundColor: '#fff',
     borderWidth: 1,
-    borderColor: "#ddd",
-    borderRadius: 16,
-    padding: 10,
+    borderColor: '#ddd',
   },
-  messageText: { fontSize: 15, color: "#111" },
+  messageText: {
+    fontSize: 15,
+    color: '#111',
+  },
+  timestamp: {
+    fontSize: 11,
+    color: '#888',
+    marginTop: 4,
+    textAlign: 'right',
+  },
   inputRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    padding: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 10,
     borderTopWidth: 1,
-    borderColor: "#ddd",
-    backgroundColor: "#fff",
+    borderColor: '#e5e7eb',
+    backgroundColor: '#fff',
   },
   input: {
     flex: 1,
-    borderWidth: 1,
-    borderColor: "#ccc",
-    borderRadius: 20,
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    marginRight: 8,
-    backgroundColor: "#fff",
+    borderWidth: 1.5,
+    borderColor: '#2563eb',
+    borderRadius: 22,
+    paddingHorizontal: 18,
+    paddingVertical: 10,
+    marginRight: 10,
+    backgroundColor: '#f9fafb',
+    fontSize: 15,
   },
   sendBtn: {
-    backgroundColor: "#2563eb",
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
-  },
-  avatar: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: "#4ECB71",
-    alignItems: "center",
-    justifyContent: "center",
-    marginHorizontal: 6,
-  },
-  avatarText: {
-    color: "#fff",
-    fontWeight: "bold",
-  },
-  messageRow: {
-    flexDirection: "row",
-    alignItems: "flex-end",
-    marginVertical: 4,
-    maxWidth: "90%",
-  },
-  timestamp: {
-    fontSize: 10,
-    color: "#888",
-    marginTop: 4,
-    textAlign: "right",
+    backgroundColor: '#2563eb',
+    paddingHorizontal: 18,
+    paddingVertical: 10,
+    borderRadius: 22,
   },
 });

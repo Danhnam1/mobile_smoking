@@ -41,7 +41,7 @@ export default function ChatListScreen({ navigation }) {
       </View>
       <FlatList
         contentContainerStyle={styles.list}
-        data={chatList}
+        data={chatList.filter(item => item.user_id)}
         keyExtractor={(item) => item._id}
         renderItem={({ item }) => (
           <TouchableOpacity
@@ -50,12 +50,12 @@ export default function ChatListScreen({ navigation }) {
           >
             <View style={styles.avatar}>
               <Text style={styles.avatarText}>
-                {getAvatarText(item.user_id.full_name)}
+                {getAvatarText(item.user_id?.full_name || 'Không rõ')}
               </Text>
             </View>
             <View>
-              <Text style={styles.name}>{item.user_id.full_name}</Text>
-              <Text style={styles.email}>{item.user_id.email}</Text>
+              <Text style={styles.name}>{item.user_id?.full_name || 'Không rõ'}</Text>
+              <Text style={styles.email}>{item.user_id?.email || ''}</Text>
             </View>
           </TouchableOpacity>
         )}

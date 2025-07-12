@@ -93,11 +93,11 @@ export const fetchSmokingStatus = async (token) => {
       headers: headers,
     });
     if (!response.ok) {
-      throw new Error('Failed to fetch smoking status');
+      
     }
     return await response.json();
   } catch (error) {
-    console.error('Error fetching smoking status:', error);
+    
     handleApiError(error);
   }
 };
@@ -187,6 +187,20 @@ export const getCurrentUserMembership = async (token) => {
     return await response.json();
   } catch (error) {
     console.error('Lỗi khi lấy trạng thái thành viên:', error);
+    throw error;
+  }
+};
+
+// Lấy coachId theo userId (dùng cho video call)
+export const getCoachByUserId = async (userId) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/video/coach/${userId}`);
+    if (!response.ok) {
+      throw new Error('Không tìm thấy coach cho user này');
+    }
+    return await response.json();
+  } catch (error) {
+    console.error('Error fetching coach by userId:', error);
     throw error;
   }
 };

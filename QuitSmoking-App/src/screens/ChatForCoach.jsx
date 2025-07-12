@@ -14,6 +14,7 @@ import { io } from "socket.io-client";
 import { closeSession, getMessages, getOrCreateSession, getSessionByCoach } from "../api/chat";
 import { useAuth } from "../contexts/AuthContext";
 import {LOCAL_IP_ADDRESS} from "../config/config"
+import { useNavigation } from '@react-navigation/native';
 export default function ChatForCoach() {
   const { token, user } = useAuth();
   const currentUserId = user?._id;
@@ -22,6 +23,7 @@ export default function ChatForCoach() {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
   const socketRef = useRef(null);
+  const navigation = useNavigation();
 
   useEffect(() => {
     if (!token) return;
@@ -84,45 +86,49 @@ export default function ChatForCoach() {
         <FlatList
           data={chatList}
           keyExtractor={(item) => item._id}
-          renderItem={({ item }) => (
-            <TouchableOpacity
-              style={[
-                styles.chatItem,
-                selectedChat?._id === item._id && styles.chatItemActive,
-              ]}
-              onPress={() => selectChat(item)}
-            >
-              <Image
-                source={{
-                  uri: `https://api.dicebear.com/7.x/miniavs/svg?seed=${item.user_id.full_name}`,
-                }}
-                style={styles.avatar}
-              />
-              <View style={{ flex: 1 }}>
-                <Text style={styles.chatName}>{item.user_id.full_name}</Text>
-                <Text style={styles.chatEmail}>{item.user_id.email}</Text>
-              </View>
-            </TouchableOpacity>
-          )}
+          renderItem={({ item }) => {
+            console.log('Sidebar user_id:', item.user_id);
+            return (
+              <TouchableOpacity
+                style={[
+                  styles.chatItem,
+                  selectedChat?._id === item._id && styles.chatItemActive,
+                ]}
+                onPress={() => selectChat(item)}
+              >
+                <Image
+                  source={{
+                    uri: `https://api.dicebear.com/7.x/miniavs/svg?seed=${item.user_id?.full_name || 'unknown'}`,
+                  }}
+                  style={styles.avatar}
+                />
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.chatName}>{item.user_id?.full_name || 'Không rõ'}</Text>
+                  <Text style={styles.chatEmail}>{item.user_id?.email || ''}</Text>
+                </View>
+              </TouchableOpacity>
+            );
+          }}
         />
       </View>
 
       {/* Main Chat Area */}
       <View style={styles.chatArea}>
         {selectedChat && (
+          console.log('Header selectedChat.user_id:', selectedChat.user_id),
           <View style={styles.chatCard}>
             {/* Header */}
             <View style={styles.chatHeader}>
               <View style={styles.headerLeft}>
                 <Image
                   source={{
-                    uri: `https://api.dicebear.com/7.x/miniavs/svg?seed=${selectedChat.user_id.full_name}`,
+                    uri: `https://api.dicebear.com/7.x/miniavs/svg?seed=${selectedChat.user_id?.full_name || 'unknown'}`,
                   }}
                   style={styles.avatarLarge}
                 />
                 <View>
                   <Text style={styles.chatUserName}>
-                    {selectedChat.user_id.full_name}
+                    {selectedChat.user_id?.full_name || 'Không rõ'}
                   </Text>
                   <Text style={styles.chatStatus}>Đang hoạt động</Text>
                 </View>
@@ -130,11 +136,12 @@ export default function ChatForCoach() {
               <TouchableOpacity
                 style={styles.videoButton}
                 onPress={() => {
-                  const callLink = `http://localhost:5173/call/${selectedChat?.user_id?._id}-${user._id}`;
-                  socketRef.current.emit("sendMessage", {
-                    sessionId: selectedChat._id,
-                    content: `Hãy tham gia cuộc gọi video: ${callLink}`,
-                  });
+                  const memberId = selectedChat.user_id?._id || selectedChat.user_id || null;
+                  if (memberId) {
+                    navigation.navigate('VideoCallScreen', { memberId });
+                  } else {
+                    alert('Không tìm thấy userId của thành viên!');
+                  }
                 }}
               >
                 <Icon name="video" size={18} color="#fff" />
