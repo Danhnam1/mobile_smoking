@@ -2,8 +2,9 @@ import React, { useEffect, useState, useRef } from 'react';
 import { View, Text, ActivityIndicator, StyleSheet, TouchableOpacity } from 'react-native';
 import { useAuth } from '../contexts/AuthContext';
 import { WebView } from 'react-native-webview';
-import { JITSI_APP_ID, JITSI_ROOM_DEFAULT, JITSI_JWT_TOKEN } from '@env';
+import Constants from 'expo-constants';
 
+const { JITSI_APP_ID, JITSI_ROOM_DEFAULT, JITSI_JWT_TOKEN } = Constants.expoConfig.extra;
 
 
 
