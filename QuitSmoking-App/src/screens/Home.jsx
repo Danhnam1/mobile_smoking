@@ -39,7 +39,7 @@ export default function Home() {
         // Lấy thông tin hút thuốc trước khi cai
         const preStatus = await fetchSmokingStatus(token);
         const avgCigPerDay = preStatus?.cigarette_count || 0;
-
+        console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>dasd", user)
         // Fetch the user's quit plan to get planId
         const quitPlan = await fetchQuitPlan(user._id, token);
         console.log('quitPlan:', quitPlan);
@@ -133,7 +133,7 @@ export default function Home() {
         <HomeHeaderAndProgressCard progressData={progressData} />
 
         {/* Community Section */}
-        <TouchableOpacity style={styles.sectionContainer} onPress={() => navigation.navigate('Community')}>
+        <TouchableOpacity style={styles.sectionContainer} onPress={() => navigation.navigate('CommunityTab')}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Community</Text>
           </View>
@@ -143,7 +143,7 @@ export default function Home() {
               <Ionicons name="people" size={30} color="#FFF" />
             </View>
             <View>
-              <Text style={styles.communityUsername}>LuciFaye613</Text>
+              <Text style={styles.communityUsername}>{user.full_name}</Text>
               <Text style={styles.communityMessage}>cố cán mốc 100 ngày đầu</Text>
             </View>
           </View>

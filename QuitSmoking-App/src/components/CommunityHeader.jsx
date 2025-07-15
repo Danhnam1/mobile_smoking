@@ -5,14 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 const CommunityHeader = () => {
   return (
     <View style={styles.headerContainer}>
-      <TouchableOpacity style={styles.backButton}>
-        <Ionicons name="chevron-back" size={28} color="#000" />
-      </TouchableOpacity>
       <Text style={styles.headerTitle}>Community</Text>
-      <View style={styles.iconContainer}>
-        <Ionicons name="star" size={24} color="#c0c0c0" style={styles.icon} />
-        <Ionicons name="person-circle-outline" size={24} color="#c0c0c0" style={styles.icon} />
-      </View>
     </View>
   );
 };

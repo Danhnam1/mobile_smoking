@@ -1,7 +1,7 @@
 import { Platform } from 'react-native';
 // Define the local IP address for development on physical devices.
 // Replace this with your computer's local IP address.
-export const LOCAL_IP_ADDRESS = '192.168.100.7'; // EXAMPLE: '192.168.1.100'
+export const LOCAL_IP_ADDRESS = '192.168.100.147'; // EXAMPLE: '192.168.1.100'
 
 // // Define and export the base URL for the API.
 // // This handles the difference between Android Emulator and other environments.

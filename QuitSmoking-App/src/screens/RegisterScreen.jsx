@@ -48,8 +48,16 @@ const RegisterScreen = ({ navigation }) => {
         birth_date: birthDateForApi, // format YYYY-MM-DD
         gender,
       });
-      Alert.alert('Thành công', 'Đăng ký thành công! Hãy đăng nhập.');
-      navigation.replace('LoginScreen');
+      Alert.alert(
+        'Thành công',
+        'Đăng ký thành công! Vui lòng kiểm tra email để xác thực tài khoản.',
+        [
+          {
+            text: 'Đăng nhập',
+            onPress: () => navigation.replace('LoginScreen')
+          }
+        ]
+      );
     } catch (error) {
       Alert.alert('Đăng ký thất bại', error.message);
       console.log(error);
