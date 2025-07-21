@@ -1,9 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Dimensions } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Dimensions, Alert } from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import Svg, { Circle } from 'react-native-svg';
 import { useAuth } from '../contexts/AuthContext';
 import { API_BASE_URL } from '../config/config';
+import { io } from 'socket.io-client';
+import { LOCAL_IP_ADDRESS } from '../config/config';
 
 const { width } = Dimensions.get('window');
 
@@ -43,6 +45,15 @@ const BadgeScreen = ({ navigation, isHomeScreen = true }) => {
   const [userBadges, setUserBadges] = useState([]);
   const [membership, setMembership] = useState(null);
   const [loading, setLoading] = useState(true);
+
+  // Khởi tạo socket community (nếu cần)
+  const [communitySocket, setCommunitySocket] = useState(null);
+  useEffect(() => {
+    if (!token) return;
+    const socket = io(`http://${LOCAL_IP_ADDRESS}:3000/community`, { auth: { token } });
+    setCommunitySocket(socket);
+    return () => socket.disconnect();
+  }, [token]);
 
   useEffect(() => {
     const fetchAll = async () => {
@@ -155,6 +166,50 @@ const BadgeScreen = ({ navigation, isHomeScreen = true }) => {
     return 0;
   };
 
+  // Hàm gửi badge vào community qua socket
+  const shareBadgeToCommunity = (badge) => {
+    Alert.alert(
+      'Xác nhận chia sẻ',
+      `Bạn có chắc muốn chia sẻ huy hiệu "${badge.name}" lên cộng đồng không?`,
+      [
+        { text: 'Hủy', style: 'cancel' },
+        { text: 'Chia sẻ', style: 'default', onPress: async () => {
+            try {
+              const message = {
+                message: `🎉 Tôi vừa đạt được huy hiệu: "${badge.name}"!\n${badge.description}`,
+                type: 'badge',
+                badge: {
+                  _id: badge._id,
+                  name: badge.name,
+                  description: badge.description,
+                  icon: badge.icon,
+                }
+              };
+              if (communitySocket && communitySocket.connected) {
+                communitySocket.emit('chat message', message);
+              } else {
+                // Fallback gửi qua REST API nếu socket chưa sẵn sàng
+                const headers = { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' };
+                await fetch(`${API_BASE_URL}/community/messages`, {
+                  method: 'POST',
+                  headers,
+                  body: JSON.stringify({
+                    content: message.message,
+                    type: 'badge',
+                    badge: message.badge
+                  })
+                });
+              }
+              if (navigation) navigation.navigate('Main', { screen: 'Community' });
+            } catch (err) {
+              alert('Gửi huy hiệu lên cộng đồng thất bại!');
+            }
+          }
+        }
+      ]
+    );
+  };
+
   const handleSeeAll = () => {
     if (navigation) {
       navigation.navigate('AllBadges');
@@ -210,6 +265,16 @@ const BadgeScreen = ({ navigation, isHomeScreen = true }) => {
         </Text>
         {!achieved && (
           <Text style={styles.notAchievedText}>Not yet achieved</Text>
+        )}
+        {/* Chỉ hiển thị icon share cho badge đã đạt được */}
+        {achieved && (
+          <TouchableOpacity
+            style={{ marginTop: 8, alignSelf: 'center' }}
+            onPress={() => shareBadgeToCommunity(badge)}
+            accessibilityLabel="Chia sẻ lên cộng đồng"
+          >
+            <MaterialCommunityIcons name="reply" size={28} color="#4ECB71" />
+          </TouchableOpacity>
         )}
         {isLocked && (
           <View style={styles.proBadgeContainer}>
