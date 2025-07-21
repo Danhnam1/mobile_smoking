@@ -1,13 +1,26 @@
 import React, { useEffect, useRef, useState } from "react";
-import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet, Modal } from "react-native";
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  ScrollView,
+  StyleSheet,
+  Modal,
+} from "react-native";
 import { io } from "socket.io-client";
-import { getOrCreateSession, getSessionByCoach, getMessages, closeSession } from "../api/chat";
+import {
+  getOrCreateSession,
+  getSessionByCoach,
+  getMessages,
+  closeSession,
+} from "../api/chat";
 // import CoachVideoCall from "./CoachVideoCall";
 import { LOCAL_IP_ADDRESS } from "../config/config";
 import Icon from "react-native-vector-icons/Feather";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { useAuth } from '../contexts/AuthContext';
-import { useNavigation } from '@react-navigation/native';
+import { useAuth } from "../contexts/AuthContext";
+import { useNavigation } from "@react-navigation/native";
 
 const CoachChat = () => {
   const { user, token } = useAuth();
@@ -23,7 +36,6 @@ const CoachChat = () => {
   const navigation = useNavigation();
 
   useEffect(() => {
-    
     const setupChat = async () => {
       try {
         const response = await getOrCreateSession(token);
@@ -35,14 +47,14 @@ const CoachChat = () => {
         }
         const sessionData = response.data; // SỬA Ở ĐÂY
         setSession(sessionData); // Lưu object session
-        const sid = sessionData._id;       // SỬA Ở ĐÂY
+        const sid = sessionData._id; // SỬA Ở ĐÂY
         if (!sid) {
           setSetupError(true);
           console.error("Không lấy được session id", sessionData);
           return;
         }
         setSessionId(sid);
-    
+
         const msgRes = await getMessages(token, sid);
         console.log("getMessages response:", msgRes);
         if (!msgRes || !msgRes.data) {
@@ -51,13 +63,15 @@ const CoachChat = () => {
           return;
         }
         setMessages(msgRes.data); // SỬA Ở ĐÂY nếu msgRes.data là mảng tin nhắn
-    
-        socketRef.current = io(`http://${LOCAL_IP_ADDRESS}:3000/coach`, { auth: { token } });
-        
+
+        socketRef.current = io(`http://${LOCAL_IP_ADDRESS}:3000/coach`, {
+          auth: { token },
+        });
+
         socketRef.current.on("connect", () => {
           socketRef.current.emit("joinSession", sid);
         });
-    
+
         socketRef.current.on("newMessage", (msg) => {
           setMessages((prev) => [...prev, msg]);
         });
@@ -98,7 +112,8 @@ const CoachChat = () => {
           <TouchableOpacity
             style={styles.videoBtn}
             onPress={() => {
-              const coachId = session?.coach_id?._id || session?.coach_id || user?._id;
+              const coachId =
+                session?.coach_id?._id || session?.coach_id || user?._id;
               let memberId = session?.user_id?._id || session?.user_id;
               // Nếu chưa có, thử lấy từ messages
               if (!memberId && messages.length > 0) {
@@ -111,13 +126,17 @@ const CoachChat = () => {
                 }
               }
               if (coachId && memberId) {
-                const shortCoach = String(coachId).replace(/[^a-zA-Z0-9]/g, '').slice(-4);
-                const shortMember = String(memberId).replace(/[^a-zA-Z0-9]/g, '').slice(-4);
+                const shortCoach = String(coachId)
+                  .replace(/[^a-zA-Z0-9]/g, "")
+                  .slice(-4);
+                const shortMember = String(memberId)
+                  .replace(/[^a-zA-Z0-9]/g, "")
+                  .slice(-4);
                 const roomName = `c${shortCoach}m${shortMember}`.toLowerCase(); // Đảm bảo luôn là chữ thường, không dấu cách
-                console.log('roomName truyền vào:', roomName);
-                navigation.navigate('VideoCallScreen', { roomName });
+                console.log("roomName truyền vào:", roomName);
+                navigation.navigate("VideoCallScreen", { roomName });
               } else {
-                alert('Không tìm thấy coachId hoặc memberId!');
+                alert("Không tìm thấy coachId hoặc memberId!");
               }
             }}
           >
@@ -127,9 +146,23 @@ const CoachChat = () => {
         )}
       </View>
       {setupError ? (
-        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', width: '100%' }}>
-          <Text style={{ color: '#ef4444', fontSize: 16, textAlign: 'center', padding: 24 }}>
-            Hãy đăng ký gói hội viên để trò chuyện với coach
+        <View
+          style={{
+            flex: 1,
+            justifyContent: "center",
+            alignItems: "center",
+            width: "100%",
+          }}
+        >
+          <Text
+            style={{
+              color: "#ef4444",
+              fontSize: 16,
+              textAlign: "center",
+              padding: 24,
+            }}
+          >
+            Hãy kiểm tra hội viên hoặc quitplan để trò chuyện với coach
           </Text>
         </View>
       ) : (
@@ -137,7 +170,9 @@ const CoachChat = () => {
           <ScrollView
             style={styles.messages}
             ref={scrollViewRef}
-            onContentSizeChange={() => scrollViewRef.current?.scrollToEnd({ animated: true })}
+            onContentSizeChange={() =>
+              scrollViewRef.current?.scrollToEnd({ animated: true })
+            }
           >
             {messages.map((msg, idx) => {
               const senderId =
@@ -145,66 +180,58 @@ const CoachChat = () => {
                 (msg.author && msg.author._id);
 
               const senderName =
-                msg.author?.full_name ||
-                msg.user_id?.full_name ||
-                "Coach";
+                msg.author?.full_name || msg.user_id?.full_name || "Coach";
 
               const isOwn = String(senderId) === String(currentUserId);
 
               const avatar = getAvatarText(senderName);
 
               return (
-<View
-  key={idx}
-  style={[
-    styles.messageRow,
-    isOwn ? styles.ownMessage : styles.otherMessage,
-  ]}
->
-  {!isOwn && (
-    <View style={styles.avatar}>
-      <Text style={styles.avatarText}>{avatar}</Text>
-    </View>
-  )}
+                <View
+                  key={idx}
+                  style={[
+                    styles.messageRow,
+                    isOwn ? styles.ownMessage : styles.otherMessage,
+                  ]}
+                >
+                  {!isOwn && (
+                    <View style={styles.avatar}>
+                      <Text style={styles.avatarText}>{avatar}</Text>
+                    </View>
+                  )}
 
-  <View>
-    <View
-      style={[
-        styles.messageBubble,
-        isOwn ? styles.ownBubble : styles.otherBubble,
-      ]}
-    >
-      <Text style={styles.messageText}>{msg.content}</Text>
-    </View>
-    <Text
-      style={[
-        styles.timestamp,
-        { textAlign: isOwn ? "right" : "left" },
-      ]}
-    >
-      {msg.sent_at
-        ? new Date(msg.sent_at).toLocaleTimeString([], {
-            hour: "2-digit",
-            minute: "2-digit",
-          })
-        : "N/A"}
-    </Text>
-  </View>
+                  <View>
+                    <View
+                      style={[
+                        styles.messageBubble,
+                        isOwn ? styles.ownBubble : styles.otherBubble,
+                      ]}
+                    >
+                      <Text style={styles.messageText}>{msg.content}</Text>
+                    </View>
+                    <Text
+                      style={[
+                        styles.timestamp,
+                        { textAlign: isOwn ? "right" : "left" },
+                      ]}
+                    >
+                      {msg.sent_at
+                        ? new Date(msg.sent_at).toLocaleTimeString([], {
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })
+                        : "N/A"}
+                    </Text>
+                  </View>
 
-  {isOwn && (
-    <View style={styles.avatar}>
-      <Text style={styles.avatarText}>{avatar}</Text>
-    </View>
-  )}
-</View>
-
-  );
-})}
-
-
-
-
-
+                  {isOwn && (
+                    <View style={styles.avatar}>
+                      <Text style={styles.avatarText}>{avatar}</Text>
+                    </View>
+                  )}
+                </View>
+              );
+            })}
           </ScrollView>
           <View style={styles.inputRow}>
             <TextInput
@@ -378,11 +405,8 @@ const styles = StyleSheet.create({
     marginVertical: 4,
     maxWidth: "90%",
   },
-  ownMessage: { alignSelf: "flex-end"},
+  ownMessage: { alignSelf: "flex-end" },
   otherMessage: { alignSelf: "flex-start" },
 });
-
-
-
 
 export default CoachChat;

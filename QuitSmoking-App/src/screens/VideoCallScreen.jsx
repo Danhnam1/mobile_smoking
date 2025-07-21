@@ -1,20 +1,23 @@
-import React, { useEffect, useState, useRef } from 'react';
-import { View, Text, ActivityIndicator, StyleSheet, TouchableOpacity } from 'react-native';
-import { useAuth } from '../contexts/AuthContext';
-import { WebView } from 'react-native-webview';
-import Constants from 'expo-constants';
+import React, { useEffect, useState, useRef } from "react";
+import {
+  View,
+  Text,
+  ActivityIndicator,
+  StyleSheet,
+  TouchableOpacity,
+} from "react-native";
+import { useAuth } from "../contexts/AuthContext";
+import { WebView } from "react-native-webview";
+import Constants from "expo-constants";
 
-const { JITSI_APP_ID, JITSI_ROOM_DEFAULT, JITSI_JWT_TOKEN } = Constants.expoConfig.extra;
-
-
+const { JITSI_APP_ID, JITSI_ROOM_DEFAULT, JITSI_JWT_TOKEN } =
+  Constants.expoConfig.extra;
 
 const VideoCallScreen = ({ route, navigation }) => {
   const { user, token } = useAuth();
   const [roomUrl, setRoomUrl] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-
-  
 
   // JaaS AppID và JWT token (hardcode để test)
   const appId = JITSI_APP_ID;
@@ -27,8 +30,6 @@ const VideoCallScreen = ({ route, navigation }) => {
     setLoading(false);
   }, [roomName]);
 
-
-
   if (loading) {
     return (
       <View style={styles.centered}>
@@ -40,9 +41,12 @@ const VideoCallScreen = ({ route, navigation }) => {
   if (error) {
     return (
       <View style={styles.centered}>
-        <Text style={{ color: 'red', fontSize: 16 }}>{error}</Text>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
-          <Text style={{ color: '#fff' }}>Quay lại</Text>
+        <Text style={{ color: "red", fontSize: 16 }}>{error}</Text>
+        <TouchableOpacity
+          onPress={() => navigation.goBack()}
+          style={styles.backBtn}
+        >
+          <Text style={{ color: "#fff" }}>Quay lại</Text>
         </TouchableOpacity>
       </View>
     );
@@ -69,29 +73,18 @@ const VideoCallScreen = ({ route, navigation }) => {
       />
     </View>
   );
-
-  // Nếu dùng react-native-jitsi-meet native:
-  // return (
-  //   <JitsiMeetView
-  //     ref={jitsiRef}
-  //     onConferenceTerminated={() => navigation.goBack()}
-  //     onConferenceJoined={() => {}}
-  //     onConferenceWillJoin={() => {}}
-  //     style={{ flex: 1 }}
-  //   />
-  // );
 };
 
 const styles = StyleSheet.create({
   centered: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#fff',
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#fff",
   },
   backBtn: {
     marginTop: 20,
-    backgroundColor: '#2563eb',
+    backgroundColor: "#2563eb",
     paddingHorizontal: 24,
     paddingVertical: 10,
     borderRadius: 8,

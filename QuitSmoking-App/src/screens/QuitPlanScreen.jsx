@@ -1,23 +1,36 @@
-import React, { useState, useContext, useEffect } from 'react';
-import { View, Text, TextInput, Button, StyleSheet, Alert, ScrollView, SafeAreaView, TouchableOpacity } from 'react-native';
-import { useAuth } from '../contexts/AuthContext';
-import { createQuitPlan, getSuggestedStages } from '../api/quitPlan';
-import { fetchSmokingStatus } from '../api/user';
-import { Ionicons } from '@expo/vector-icons';
+import React, { useState, useContext, useEffect } from "react";
+import {
+  View,
+  Text,
+  TextInput,
+  Button,
+  StyleSheet,
+  Alert,
+  ScrollView,
+  SafeAreaView,
+  TouchableOpacity,
+} from "react-native";
+import { useAuth } from "../contexts/AuthContext";
+import { createQuitPlan, getSuggestedStages } from "../api/quitPlan";
+import { fetchSmokingStatus } from "../api/user";
+import { Ionicons } from "@expo/vector-icons";
 import DateTimePickerModal from "react-native-modal-datetime-picker";
+import Coach from "../components/Coach";
+import { API_BASE_URL } from "../config/config";
 
 const QuitPlanScreen = ({ navigation }) => {
-  const { user, token } = useAuth();
-  const [goal, setGoal] = useState('');
-  const [startDate, setStartDate] = useState('');
-  const [endDate, setEndDate] = useState('');
-  const [note, setNote] = useState('');
-  const [reasons, setReasons] = useState(['']);
-  const [reasonsDetail, setReasonsDetail] = useState('');
+  const { user, token, membershipStatus } = useAuth();
+  const [goal, setGoal] = useState("");
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
+  const [note, setNote] = useState("");
+  const [reasons, setReasons] = useState([""]);
+  const [reasonsDetail, setReasonsDetail] = useState("");
   const [loading, setLoading] = useState(false);
   const [smokingData, setSmokingData] = useState(null);
   const [suggestedStages, setSuggestedStages] = useState(null);
   const [isDatePickerVisible, setDatePickerVisibility] = useState(false);
+  const [selectedCoachId, setSelectedCoachId] = useState(null);
 
   useEffect(() => {
     const loadData = async () => {
@@ -34,15 +47,35 @@ const QuitPlanScreen = ({ navigation }) => {
           if (stages && stages.suggested_stages) {
             setSuggestedStages(stages.suggested_stages);
           }
-        } catch (error) {
-        }
+        } catch (error) {}
       }
     };
     loadData();
   }, [user, token]);
 
+  // Debug membership status
+  useEffect(() => {
+    console.log("QuitPlanScreen - Membership Status:", membershipStatus);
+    console.log(
+      "QuitPlanScreen - Package Name:",
+      membershipStatus?.package_name
+    );
+    console.log("QuitPlanScreen - Name:", membershipStatus?.name);
+    console.log(
+      "QuitPlanScreen - Package ID Name:",
+      membershipStatus?.package_id?.name
+    );
+    console.log("QuitPlanScreen - Package ID:", membershipStatus?.package_id);
+    console.log(
+      "Is Pro Member:",
+      membershipStatus?.package_name === "pro" ||
+        membershipStatus?.name === "pro" ||
+        membershipStatus?.package_id?.name === "pro"
+    );
+  }, [membershipStatus]);
+
   const addReason = () => {
-    setReasons([...reasons, '']);
+    setReasons([...reasons, ""]);
   };
 
   const updateReason = (text, index) => {
@@ -66,30 +99,30 @@ const QuitPlanScreen = ({ navigation }) => {
 
   const handleConfirm = (date) => {
     const selectedDate = new Date(date);
-    setStartDate(selectedDate.toISOString().split('T')[0]);
+    setStartDate(selectedDate.toISOString().split("T")[0]);
 
     const calculatedEndDate = new Date(selectedDate);
     calculatedEndDate.setDate(selectedDate.getDate() + 20);
-    setEndDate(calculatedEndDate.toISOString().split('T')[0]);
+    setEndDate(calculatedEndDate.toISOString().split("T")[0]);
 
     hideDatePicker();
   };
 
   const handleCreateQuitPlan = async () => {
     if (!user || !token) {
-      Alert.alert('Error', 'User not authenticated.');
+      Alert.alert("Error", "User not authenticated.");
       return;
     }
 
     if (!goal || !startDate) {
-      Alert.alert('Error', 'Please fill in all required fields.');
+      Alert.alert("Error", "Please fill in all required fields.");
       return;
     }
 
     // Validate date format
     const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
     if (!dateRegex.test(startDate)) {
-      Alert.alert('Error', 'Please enter a valid date in YYYY-MM-DD format');
+      Alert.alert("Error", "Please enter a valid date in YYYY-MM-DD format");
       return;
     }
 
@@ -97,22 +130,51 @@ const QuitPlanScreen = ({ navigation }) => {
     try {
       const planData = {
         user_id: user._id,
-        coach_user_id: null,
+        coach_user_id: selectedCoachId || null, // Đảm bảo là _id của coach đã chọn
         goal: goal,
         start_date: new Date(startDate).toISOString(),
         end_date: new Date(endDate).toISOString(),
-        status: 'ongoing',
+        status: "ongoing",
         note: note,
-        reasons: reasons.filter(reason => reason.trim() !== ''),
-        reasons_detail: reasonsDetail
+        reasons: reasons.filter((reason) => reason.trim() !== ""),
+        reasons_detail: reasonsDetail,
       };
 
+      console.log("Creating quit plan with data:", planData);
+
       const response = await createQuitPlan(planData, token);
-      Alert.alert('Success', 'Quit Plan created successfully!');
-      navigation.navigate('Main', { screen: 'QuitStage', params: { planId: response.plan._id } });
+
+      // Đóng session chat cũ nếu có
+      try {
+        const sessionRes = await fetch(`${API_BASE_URL}/chat/session`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const sessionJson = await sessionRes.json();
+        if (sessionJson?.data?._id) {
+          await fetch(
+            `${API_BASE_URL}/chat/session/${sessionJson.data._id}/close`,
+            {
+              method: "POST",
+              headers: { Authorization: `Bearer ${token}` },
+            }
+          );
+          console.log("Closed old chat session:", sessionJson.data._id);
+        }
+      } catch (closeErr) {
+        console.log("Không thể đóng session chat cũ:", closeErr.message);
+      }
+
+      Alert.alert("Success", "Quit Plan created successfully!");
+      navigation.navigate("Main", {
+        screen: "QuitStage",
+        params: { planId: response.plan._id },
+      });
     } catch (error) {
-      console.error('Failed to create quit plan:', error);
-      Alert.alert('Error', error.message || 'Failed to create quit plan. Please try again.');
+      console.error("Failed to create quit plan:", error);
+      Alert.alert(
+        "Error",
+        error.message || "Failed to create quit plan. Please try again."
+      );
     } finally {
       setLoading(false);
     }
@@ -121,7 +183,10 @@ const QuitPlanScreen = ({ navigation }) => {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+        <TouchableOpacity
+          onPress={() => navigation.goBack()}
+          style={styles.backButton}
+        >
           <Ionicons name="arrow-back-outline" size={28} color="#2C3E50" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Create Quit Plan</Text>
@@ -136,7 +201,9 @@ const QuitPlanScreen = ({ navigation }) => {
               {suggestedStages.map((stage, index) => (
                 <View key={index} style={styles.stageItem}>
                   <Text style={styles.stageName}>{stage.name}</Text>
-                  <Text style={styles.stageDescription}>{stage.description}</Text>
+                  <Text style={styles.stageDescription}>
+                    {stage.description}
+                  </Text>
                 </View>
               ))}
             </View>
@@ -152,7 +219,7 @@ const QuitPlanScreen = ({ navigation }) => {
 
           <Text style={styles.label}>Start Date *</Text>
           <TouchableOpacity onPress={showDatePicker} style={styles.input}>
-            <Text style={{ color: startDate ? '#000' : '#ccc' }}>
+            <Text style={{ color: startDate ? "#000" : "#ccc" }}>
               {startDate ? startDate : "YYYY-MM-DD"}
             </Text>
           </TouchableOpacity>
@@ -183,9 +250,33 @@ const QuitPlanScreen = ({ navigation }) => {
             numberOfLines={4}
           />
 
-          
-          <TouchableOpacity 
-            style={[styles.submitButton, loading && styles.submitButtonDisabled]}
+          {/* Coach Selection for Pro Members */}
+          {membershipStatus?.package_name === "pro" ||
+          membershipStatus?.name === "pro" ||
+          membershipStatus?.package_id?.name === "pro" ? (
+            <>
+              <Coach setSelectedCoachId={setSelectedCoachId} />
+            </>
+          ) : (
+            <View style={styles.proFeatureContainer}>
+              <Text style={styles.proFeatureTitle}>Tính năng Pro</Text>
+              <Text style={styles.proFeatureDescription}>
+                Nâng cấp lên gói Pro để chọn coach và tùy chỉnh thông báo
+              </Text>
+              <TouchableOpacity
+                style={styles.upgradeButton}
+                onPress={() => navigation.navigate("MembershipPackage")}
+              >
+                <Text style={styles.upgradeButtonText}>Nâng cấp ngay</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+
+          <TouchableOpacity
+            style={[
+              styles.submitButton,
+              loading && styles.submitButtonDisabled,
+            ]}
             onPress={handleCreateQuitPlan}
             disabled={loading}
           >
@@ -202,25 +293,25 @@ const QuitPlanScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: "#f5f5f5",
   },
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     paddingHorizontal: 20,
     paddingVertical: 15,
-    backgroundColor: '#fff',
+    backgroundColor: "#fff",
     borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
+    borderBottomColor: "#f0f0f0",
   },
   backButton: {
     padding: 5,
   },
   headerTitle: {
     fontSize: 20,
-    fontWeight: 'bold',
-    color: '#2C3E50',
+    fontWeight: "bold",
+    color: "#2C3E50",
   },
   headerRight: {
     width: 28,
@@ -232,13 +323,13 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   suggestedStagesContainer: {
-    backgroundColor: '#fff',
+    backgroundColor: "#fff",
     borderRadius: 12,
     padding: 18,
     marginBottom: 25,
     borderWidth: 1,
-    borderColor: '#e0e0e0',
-    shadowColor: '#000',
+    borderColor: "#e0e0e0",
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
@@ -246,56 +337,56 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 20,
-    fontWeight: 'bold',
-    color: '#2C3E50',
+    fontWeight: "bold",
+    color: "#2C3E50",
     marginBottom: 15,
-    textAlign: 'center',
+    textAlign: "center",
   },
   stageItem: {
     marginBottom: 12,
     padding: 12,
-    backgroundColor: '#f8f9fa',
+    backgroundColor: "#f8f9fa",
     borderRadius: 8,
     borderLeftWidth: 4,
-    borderLeftColor: '#4CAF50',
+    borderLeftColor: "#4CAF50",
   },
   stageName: {
     fontSize: 17,
-    fontWeight: '600',
-    color: '#4CAF50',
+    fontWeight: "600",
+    color: "#4CAF50",
     marginBottom: 5,
   },
   stageDescription: {
     fontSize: 14,
-    color: '#666',
+    color: "#666",
     lineHeight: 20,
   },
   label: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#2C3E50',
+    fontWeight: "600",
+    color: "#2C3E50",
     marginBottom: 10,
     marginTop: 15,
   },
   input: {
     height: 55,
-    borderColor: '#ddd',
+    borderColor: "#ddd",
     borderWidth: 1,
     borderRadius: 10,
     paddingHorizontal: 15,
     marginBottom: 20,
-    backgroundColor: '#fff',
-    justifyContent: 'center',
+    backgroundColor: "#fff",
+    justifyContent: "center",
   },
   textArea: {
     height: 120,
-    textAlignVertical: 'top',
+    textAlignVertical: "top",
     paddingTop: 15,
     marginBottom: 20,
   },
   reasonContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     marginBottom: 15,
   },
   reasonInput: {
@@ -306,39 +397,75 @@ const styles = StyleSheet.create({
     padding: 5,
   },
   addButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     marginBottom: 25,
-    alignSelf: 'flex-start',
+    alignSelf: "flex-start",
     paddingVertical: 5,
     paddingHorizontal: 10,
     borderRadius: 8,
-    backgroundColor: '#E8F5E9',
+    backgroundColor: "#E8F5E9",
   },
   addButtonText: {
-    color: '#4CAF50',
+    color: "#4CAF50",
     fontSize: 16,
     marginLeft: 8,
-    fontWeight: 'bold',
+    fontWeight: "bold",
   },
   submitButton: {
-    backgroundColor: '#4CAF50',
+    backgroundColor: "#4CAF50",
     paddingVertical: 18,
     borderRadius: 10,
-    alignItems: 'center',
+    alignItems: "center",
     marginTop: 30,
   },
   submitButtonDisabled: {
     opacity: 0.6,
   },
   submitButtonText: {
-    color: '#fff',
+    color: "#fff",
     fontSize: 19,
-    fontWeight: '700',
+    fontWeight: "700",
+  },
+  proFeatureContainer: {
+    backgroundColor: "#fff",
+    borderRadius: 12,
+    padding: 20,
+    marginBottom: 20,
+    borderWidth: 1,
+    borderColor: "#e0e0e0",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  proFeatureTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: "#2C3E50",
+    marginBottom: 8,
+    textAlign: "center",
+  },
+  proFeatureDescription: {
+    fontSize: 14,
+    color: "#666",
+    textAlign: "center",
+    marginBottom: 15,
+    lineHeight: 20,
+  },
+  upgradeButton: {
+    backgroundColor: "#4CAF50",
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 8,
+    alignSelf: "center",
+  },
+  upgradeButtonText: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "600",
   },
 });
 
 export default QuitPlanScreen;
-
-
-

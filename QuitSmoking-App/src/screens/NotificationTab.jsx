@@ -1,6 +1,19 @@
 import React, { useEffect, useState } from "react";
-import { SafeAreaView, View, Text, FlatList, TouchableOpacity, StyleSheet, RefreshControl } from "react-native";
-import { getAll, markAsRead, markAsReadAll, deleteAll } from "../api/notification";
+import {
+  SafeAreaView,
+  View,
+  Text,
+  FlatList,
+  TouchableOpacity,
+  StyleSheet,
+  RefreshControl,
+} from "react-native";
+import {
+  getAll,
+  markAsRead,
+  markAsReadAll,
+  deleteAll,
+} from "../api/notification";
 import { useAuth } from "../contexts/AuthContext";
 
 const NotificationTab = () => {
@@ -13,7 +26,7 @@ const NotificationTab = () => {
     setRefreshing(true);
     try {
       const res = await getAll(token);
-      console.log("notidata>>>>", res)
+      console.log("notidata>>>>", res);
       setNotifications(res || []);
     } catch (err) {
       setNotifications([]);
@@ -61,7 +74,10 @@ const NotificationTab = () => {
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Thông báo</Text>
         <View style={styles.headerActions}>
-          <TouchableOpacity style={styles.headerBtn} onPress={handleMarkAllAsRead}>
+          <TouchableOpacity
+            style={styles.headerBtn}
+            onPress={handleMarkAllAsRead}
+          >
             <Text style={styles.headerBtnText}>Đọc tất cả</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.headerBtn} onPress={handleClearAll}>
@@ -77,7 +93,10 @@ const NotificationTab = () => {
           <Text style={styles.empty}>Không có thông báo nào</Text>
         }
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={fetchNotifications} />
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={fetchNotifications}
+          />
         }
         contentContainerStyle={{ flexGrow: 1 }}
       />
@@ -86,77 +105,76 @@ const NotificationTab = () => {
 };
 
 const styles = StyleSheet.create({
-    container: {
-      flex: 1,
-      backgroundColor: "#f5f5f5", // nền nhẹ để item nổi hơn
-    },
-    header: {
-      flexDirection: "row",
-      justifyContent: "space-between",
-      alignItems: "center",
-      paddingHorizontal: 16,
-      paddingVertical: 12,
-      backgroundColor: "#ffffff",
-      borderBottomWidth: 1,
-      borderBottomColor: "#ddd",
-    },
-    headerTitle: {
-      fontSize: 22,
-      fontWeight: "bold",
-      color: "#111",
-    },
-    headerActions: {
-      flexDirection: "row",
-    },
-    headerBtn: {
-      marginLeft: 8,
-      backgroundColor: "#2563eb",
-      borderRadius: 6,
-      paddingVertical: 6,
-      paddingHorizontal: 10,
-    },
-    headerBtnText: {
-      color: "#fff",
-      fontWeight: "600",
-      fontSize: 14,
-    },
-    item: {
-      backgroundColor: "#fff",
-      marginHorizontal: 16, // tạo khoảng cách hai bên
-      marginVertical: 6, // khoảng cách giữa các item
-      padding: 14,
-      borderRadius: 10,
-      shadowColor: "#000",
-      shadowOffset: { width: 0, height: 1 },
-      shadowOpacity: 0.05,
-      shadowRadius: 2,
-      elevation: 2,
-    },
-    unread: {
-      backgroundColor: "#e0f2fe", // màu xanh nhạt hơn
-    },
-    title: {
-      fontWeight: "600",
-      fontSize: 16,
-      marginBottom: 4,
-      color: "#111",
-    },
-    content: {
-      fontSize: 15,
-      color: "#333",
-      marginBottom: 6,
-    },
-    time: {
-      color: "#888",
-      fontSize: 13,
-    },
-    empty: {
-      textAlign: "center",
-      color: "#888",
-      marginTop: 40,
-      fontSize: 16,
-    },
-  });
-  
+  container: {
+    flex: 1,
+    backgroundColor: "#f5f5f5", // nền nhẹ để item nổi hơn
+  },
+  header: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    backgroundColor: "#ffffff",
+    borderBottomWidth: 1,
+    borderBottomColor: "#ddd",
+  },
+  headerTitle: {
+    fontSize: 22,
+    fontWeight: "bold",
+    color: "#111",
+  },
+  headerActions: {
+    flexDirection: "row",
+  },
+  headerBtn: {
+    marginLeft: 8,
+    backgroundColor: "#2563eb",
+    borderRadius: 6,
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+  },
+  headerBtnText: {
+    color: "#fff",
+    fontWeight: "600",
+    fontSize: 14,
+  },
+  item: {
+    backgroundColor: "#fff",
+    marginHorizontal: 16, // tạo khoảng cách hai bên
+    marginVertical: 6, // khoảng cách giữa các item
+    padding: 14,
+    borderRadius: 10,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  unread: {
+    backgroundColor: "#e0f2fe", // màu xanh nhạt hơn
+  },
+  title: {
+    fontWeight: "600",
+    fontSize: 16,
+    marginBottom: 4,
+    color: "#111",
+  },
+  content: {
+    fontSize: 15,
+    color: "#333",
+    marginBottom: 6,
+  },
+  time: {
+    color: "#888",
+    fontSize: 13,
+  },
+  empty: {
+    textAlign: "center",
+    color: "#888",
+    marginTop: 40,
+    fontSize: 16,
+  },
+});
 
 export default NotificationTab;
