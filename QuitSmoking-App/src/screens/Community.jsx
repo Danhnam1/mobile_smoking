@@ -8,8 +8,9 @@ import MessageInput from '../components/MessageInput';
 import { useAuth } from '../contexts/AuthContext';
 import { API_BASE_URL } from '../config/config';
 import CoachChat from '../components/CoachChat';
-import { LOCAL_IP_ADDRESS } from '../config/config';
-const SOCKET_URL = `http://${LOCAL_IP_ADDRESS}:3000/community`; // Đổi thành URL backend của bạn
+import { LOCAL_IP_ADDRESS, SOCKET_URL } from '../config/config';
+// const SOCKET_URL = `http://${LOCAL_IP_ADDRESS}:3000/community`; // Đổi thành URL backend của bạn
+
 const Community = () => {
   const [socket, setSocket] = useState(null);
   const [messages, setMessages] = useState([]);
@@ -51,7 +52,7 @@ const Community = () => {
       .catch(() => setMessages([]));
 
     // Kết nối socket
-    const newSocket = io(SOCKET_URL, { auth: { token } });
+    const newSocket = io(`${SOCKET_URL}/community`, { auth: { token } });
     setSocket(newSocket);
 
     newSocket.on('chat message', (data) => {
