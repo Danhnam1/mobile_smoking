@@ -109,7 +109,7 @@ const CoachChat = () => {
     <View style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.headerTitle}>
-          Chat với Coach{coachName ? ` - ${coachName}` : ""}
+          {session?.coach_id?.full_name ? session.coach_id.full_name : "Chat với Coach"}
         </Text>
         {!setupError && (
           <TouchableOpacity

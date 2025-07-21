@@ -32,6 +32,7 @@ const QuitPlanScreen = ({ navigation }) => {
   const [suggestedStages, setSuggestedStages] = useState(null);
   const [isDatePickerVisible, setDatePickerVisibility] = useState(false);
   const [selectedCoachId, setSelectedCoachId] = useState(null);
+  const [selectedCoach, setSelectedCoach] = useState(null);
 
   useEffect(() => {
     const loadData = async () => {
@@ -260,7 +261,8 @@ const QuitPlanScreen = ({ navigation }) => {
           membershipStatus?.name === "pro" ||
           membershipStatus?.package_id?.name === "pro" ? (
             <>
-              <Coach setSelectedCoachId={setSelectedCoachId} />
+              <Coach setSelectedCoachId={setSelectedCoachId} setSelectedCoach={setSelectedCoach} />
+             
             </>
           ) : (
             <View style={styles.proFeatureContainer}>

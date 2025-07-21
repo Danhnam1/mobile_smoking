@@ -14,7 +14,7 @@ import { io } from "socket.io-client";
 import { closeSession, getMessages, getOrCreateSession, getSessionByCoach } from "../api/chat";
 import { useAuth } from "../contexts/AuthContext";
 import {LOCAL_IP_ADDRESS} from "../config/config"
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
 export default function ChatForCoach() {
   const { token, user } = useAuth();
   const currentUserId = user?._id;
@@ -24,6 +24,8 @@ export default function ChatForCoach() {
   const [input, setInput] = useState("");
   const socketRef = useRef(null);
   const navigation = useNavigation();
+  const route = useRoute();
+  const coachIdFromParams = route.params?.coachId;
 
   useEffect(() => {
     if (!token) return;
@@ -52,7 +54,20 @@ export default function ChatForCoach() {
       const res = await getSessionByCoach(token);
       console.log("res.data:", res?.data); // Đã là mảng
       setChatList(res?.data || []);
-      if (res?.data?.length > 0) selectChat(res.data[0]);
+      if (res?.data?.length > 0) {
+        if (coachIdFromParams) {
+          // Tìm session với coachId đúng
+          const found = res.data.find(item =>
+            item.coach_id?._id === coachIdFromParams ||
+            item.coach_id === coachIdFromParams
+          );
+          if (found) {
+            selectChat(found);
+            return;
+          }
+        }
+        selectChat(res.data[0]);
+      }
     } catch (err) {
       console.error("Không thể tải danh sách phiên chat", err);
     }
@@ -122,15 +137,16 @@ export default function ChatForCoach() {
               <View style={styles.headerLeft}>
                 <Image
                   source={{
-                    uri: `https://api.dicebear.com/7.x/miniavs/svg?seed=${selectedChat.user_id?.full_name || 'unknown'}`,
+                    uri: `https://api.dicebear.com/7.x/miniavs/svg?seed=${selectedChat.coach_id?.full_name || selectedChat.user_id?.full_name || 'unknown'}`,
                   }}
                   style={styles.avatarLarge}
                 />
                 <View>
                   <Text style={styles.chatUserName}>
-                    {selectedChat.user_id?.full_name || 'Không rõ'}
+                    {/* Ưu tiên tên coach nếu có */}
+                    {selectedChat.coach_id?.full_name || selectedChat.user_id?.full_name || 'Không rõ'}
                   </Text>
-                  <Text style={styles.chatStatus}>Đang hoạt động</Text>
+                  <Text style={styles.chatStatus}>Coach</Text>
                 </View>
               </View>
               <TouchableOpacity

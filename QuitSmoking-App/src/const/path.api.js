@@ -1,4 +1,4 @@
-import { API_BASE_URL } from "../api/config";
+import { API_BASE_URL } from "../config/config";
 
 // This structure mirrors the web application's API constants.
 export const API_PATHS = {

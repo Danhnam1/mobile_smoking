@@ -1,8 +1,12 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, Alert } from 'react-native';
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, Alert, Image } from 'react-native';
 import { useAuth } from '../contexts/AuthContext';
 import gardenTheme from '../const/gardenTheme';
 import { LinearGradient } from 'expo-linear-gradient';
+import * as ImagePicker from 'expo-image-picker';
+import { Ionicons } from '@expo/vector-icons';
+import axios from 'axios';
+import { API_BASE_URL } from '../config/config';
 
 // Helper function to format ISO date string to DD/MM/YYYY
 const formatDateToDDMMYYYY = (isoString) => {
@@ -28,14 +32,28 @@ const parseDDMMYYYYToISO = (ddmmyyyyString) => {
   return ''; // Return empty string if invalid format
 };
 
+// Helper: parse DD/MM/YYYY to YYYY-MM-DD
+const parseDDMMYYYYToYMD = (ddmmyyyyString) => {
+  if (!ddmmyyyyString) return '';
+  const parts = ddmmyyyyString.split('/');
+  if (parts.length === 3) {
+    const day = parts[0].padStart(2, '0');
+    const month = parts[1].padStart(2, '0');
+    const year = parts[2];
+    return `${year}-${month}-${day}`;
+  }
+  return '';
+};
+
 const UserDetailScreen = ({ navigation, route }) => {
-  const { user, updateUserProfile } = useAuth();
+  const { user, token, updateUserProfile } = useAuth();
   const [formData, setFormData] = useState({
     fullName: user?.full_name || '',
     email: user?.email || '',
     dateOfBirth: formatDateToDDMMYYYY(user?.birth_date) || '',
     gender: user?.gender || '',
   });
+  const [avatarUri, setAvatarUri] = useState(user?.avatar || null);
 
   const handleInputChange = (field, value) => {
     setFormData(prev => ({
@@ -44,41 +62,68 @@ const UserDetailScreen = ({ navigation, route }) => {
     }));
   };
 
+  const pickImage = async () => {
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      quality: 0.7,
+    });
+
+    if (!result.canceled) {
+      setAvatarUri(result.assets[0].uri);
+    }
+  };
+
   const handleSubmit = async () => {
     try {
-      // Validate required fields (adjusted for removed phone)
-      if (!formData.fullName || !formData.email) { // Adjusted validation
+      if (!formData.fullName || !formData.email) {
         Alert.alert('Lỗi', 'Vui lòng điền đầy đủ thông tin bắt buộc');
         return;
       }
 
-      // Prepare data for API call, only including fields backend expects
-      const dataToSend = {
-        fullName: formData.fullName,
-        dateOfBirth: parseDDMMYYYYToISO(formData.dateOfBirth),
-        gender: formData.gender,
-      };
+      const form = new FormData();
+      form.append('full_name', formData.fullName);
+      form.append('birth_date', parseDDMMYYYYToYMD(formData.dateOfBirth));
+      form.append('gender', formData.gender);
 
-      // Update user profile in context and storage
-      await updateUserProfile(dataToSend);
+      if (avatarUri && !avatarUri.startsWith('http')) {
+        const filename = avatarUri.split('/').pop();
+        const match = /\.(\w+)$/.exec(filename);
+        let type = match ? `image/${match[1]}` : `image`;
+        if (type === 'image/jpg') type = 'image/jpeg';
 
-      Alert.alert(
-        'Thành công',
-        'Thông tin cá nhân đã được cập nhật',
-        [
-          {
-            text: 'OK',
-            onPress: () => {
-              // Check if navigation came from ProfileScreen
-              if (route.params?.fromProfileEdit) {
-                navigation.goBack(); // Go back to ProfileScreen
-              } else {
-                navigation.navigate('SmokingStatus'); // Continue to SmokingStatus for initial setup
-              }
+        form.append('avatar', {
+          uri: avatarUri,
+          name: filename,
+          type,
+        });
+      }
+
+      // Log FormData for debugging
+      for (let pair of form._parts) {
+        console.log(pair[0], pair[1]);
+      }
+
+      const res = await axios.put(`${API_BASE_URL}/users/me`, form, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      updateUserProfile(res.data);
+      Alert.alert('Thành công', 'Thông tin cá nhân đã được cập nhật', [
+        {
+          text: 'OK',
+          onPress: () => {
+            if (route.params?.fromProfileEdit) {
+              navigation.goBack();
+            } else {
+              navigation.navigate('SmokingStatus');
             }
-          }
-        ]
-      );
+          },
+        },
+      ]);
     } catch (error) {
       console.error('Error updating profile:', error);
       Alert.alert('Lỗi', error.message || 'Không thể cập nhật thông tin cá nhân');
@@ -90,6 +135,18 @@ const UserDetailScreen = ({ navigation, route }) => {
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         <View style={styles.formContainer}>
           <Text style={styles.title}>Thông tin cá nhân</Text>
+          
+          <View style={styles.avatarContainer}>
+            <TouchableOpacity onPress={pickImage}>
+              {avatarUri ? (
+                <Image source={{ uri: avatarUri }} style={styles.avatar} />
+              ) : (
+                <Ionicons name="person-circle" size={100} color="#ccc" />
+              )}
+            </TouchableOpacity>
+            <Text style={styles.avatarText}>Chạm để đổi ảnh đại diện</Text>
+          </View>
+
           <View style={styles.inputGroup}>
             <Text style={styles.label}>Họ và tên *</Text>
             <TextInput
@@ -166,6 +223,20 @@ const styles = StyleSheet.create({
     color: gardenTheme.colors.primary,
     textAlign: 'center',
     letterSpacing: 0.5,
+  },
+  avatarContainer: {
+    alignItems: 'center',
+    marginBottom: 24,
+  },
+  avatar: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+  },
+  avatarText: {
+    marginTop: 8,
+    color: '#666',
+    fontSize: 14,
   },
   inputGroup: {
     marginBottom: 22,

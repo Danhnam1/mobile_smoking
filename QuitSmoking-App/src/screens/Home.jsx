@@ -136,14 +136,26 @@ export default function Home() {
 
   const handlePressQuitPlan = async () => {
     try {
-      const plan = await fetchQuitPlan(user._id, token);
-      if (plan) {
-        navigation.navigate("QuitPlanDetailScreen", { planId: plan._id });
+      const smokingStatus = await fetchSmokingStatus(token);
+      console.log("smokingStatus:", smokingStatus);
+
+      // Kiểm tra cả trường hợp object rỗng hoặc chưa thiết lập
+      if (
+        !smokingStatus ||
+        !smokingStatus.cigarette_count || // hoặc trường quan trọng khác
+        smokingStatus.cigarette_count === 0
+      ) {
+        navigation.navigate("SmokingStatus");
       } else {
-        navigation.navigate("QuitPlanScreen");
+        const plan = await fetchQuitPlan(user._id, token);
+        if (plan) {
+          navigation.navigate("QuitPlanDetailScreen", { planId: plan._id });
+        } else {
+          navigation.navigate("QuitPlanScreen");
+        }
       }
     } catch (error) {
-      navigation.navigate("QuitPlanScreen");
+      navigation.navigate("SmokingStatus");
     }
   };
 

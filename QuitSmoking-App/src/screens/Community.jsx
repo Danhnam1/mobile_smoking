@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet, KeyboardAvoidingView, Platform, SafeAreaView } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet, KeyboardAvoidingView, Platform, SafeAreaView, Alert } from 'react-native';
 import { io } from 'socket.io-client';
 import CommunityHeader from '../components/CommunityHeader';
 import TabNavigation from '../components/TabNavigation';
@@ -81,6 +81,35 @@ const Community = () => {
             .toUpperCase()
         : '??';
   
+    // Nếu là tin nhắn badge
+    if (msg.type === 'badge' && msg.badge) {
+      return (
+        <View
+          key={msg._id || index}
+          style={[
+            styles.messageRow,
+            isOwn ? styles.ownMessage : styles.otherMessage,
+          ]}
+        >
+          <View style={{
+            backgroundColor: '#FFF8E1',
+            borderColor: '#FFD700',
+            borderWidth: 1.5,
+            borderRadius: 14,
+            padding: 12,
+            marginVertical: 4,
+            maxWidth: 300,
+          }}>
+            <Text style={{ fontWeight: 'bold', color: '#FF6B35', marginBottom: 4 }}>
+              🏅 Thành tích mới: {msg.badge.name}
+            </Text>
+            <Text style={{ color: '#333', marginBottom: 4 }}>{msg.badge.description}</Text>
+            <Text style={{ fontStyle: 'italic', color: '#888' }}>{msg.content}</Text>
+          </View>
+        </View>
+      );
+    }
+
     return (
       <View
   key={msg._id || index}

@@ -12,10 +12,10 @@ import { Ionicons } from "@expo/vector-icons";
 import { getAllCoaches } from "../api/user";
 import { useAuth } from "../contexts/AuthContext";
 
-const Coach = ({ setSelectedCoachId }) => {
+const Coach = ({ setSelectedCoachId, setSelectedCoach }) => {
   const [coaches, setCoaches] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [selectedCoach, setSelectedCoach] = useState(null);
+  const [selectedCoach, setLocalSelectedCoach] = useState(null);
   const { token } = useAuth();
 
   useEffect(() => {
@@ -38,8 +38,9 @@ const Coach = ({ setSelectedCoachId }) => {
   };
 
   const handleCoachSelection = (coach) => {
-    setSelectedCoach(coach);
-    setSelectedCoachId(coach._id);
+    setSelectedCoach && setSelectedCoach(coach);
+    setSelectedCoachId && setSelectedCoachId(coach._id);
+    setLocalSelectedCoach(coach); // Đảm bảo luôn set object coach nếu prop truyền vào
   };
 
   if (loading) {
