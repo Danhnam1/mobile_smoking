@@ -34,6 +34,7 @@ const CoachChat = () => {
   const socketRef = useRef(null);
   const [setupError, setSetupError] = useState(false);
   const navigation = useNavigation();
+  const [coachName, setCoachName] = useState("");
 
   useEffect(() => {
     const setupChat = async () => {
@@ -107,7 +108,9 @@ const CoachChat = () => {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Chat với Coach</Text>
+        <Text style={styles.headerTitle}>
+          Chat với Coach{coachName ? ` - ${coachName}` : ""}
+        </Text>
         {!setupError && (
           <TouchableOpacity
             style={styles.videoBtn}
