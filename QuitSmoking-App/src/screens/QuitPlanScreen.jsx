@@ -17,6 +17,7 @@ import { Ionicons } from "@expo/vector-icons";
 import DateTimePickerModal from "react-native-modal-datetime-picker";
 import Coach from "../components/Coach";
 import { API_BASE_URL } from "../config/config";
+import { useFocusEffect } from '@react-navigation/native';
 
 const QuitPlanScreen = ({ navigation }) => {
   const { user, token, membershipStatus } = useAuth();
@@ -53,13 +54,17 @@ const QuitPlanScreen = ({ navigation }) => {
     loadData();
   }, [user, token]);
 
+  useFocusEffect(
+    React.useCallback(() => {
+      // Có thể để trống, chỉ cần để dependency là [membershipStatus]
+      // hoặc gọi lại các hàm fetch nếu cần
+    }, [membershipStatus])
+  );
+
   // Debug membership status
   useEffect(() => {
-    console.log("QuitPlanScreen - Membership Status:", membershipStatus);
-    console.log(
-      "QuitPlanScreen - Package Name:",
-      membershipStatus?.package_name
-    );
+    console.log("QuitPlanScreen - membershipStatus context:", membershipStatus);
+    console.log("QuitPlanScreen - Package Name:", membershipStatus?.package_name);
     console.log("QuitPlanScreen - Name:", membershipStatus?.name);
     console.log(
       "QuitPlanScreen - Package ID Name:",

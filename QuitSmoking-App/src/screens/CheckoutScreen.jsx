@@ -35,9 +35,21 @@ const CheckoutScreen = () => {
           // NẾU THÀNH CÔNG, CẬP NHẬT TRẠNG THÁI THÀNH VIÊN
           // Ưu tiên sử dụng dữ liệu thành viên trả về từ server vì nó chính xác nhất.
           if (res && res.userMembership) {
-            console.log('Đang cập nhật trạng thái thành viên từ dữ liệu server...', res.userMembership);
-            await updateMembershipStatus(res.userMembership);
-            console.log('Cập nhật trạng thái thành viên thành công.');
+            let membership = res.userMembership;
+            // Nếu thiếu package_name, bổ sung từ packageData
+            if (!membership.package_name && packageData?.name) {
+              membership = {
+                ...membership,
+                package_name: packageData.name,
+                package_id: {
+                  _id: packageData._id,
+                  name: packageData.name,
+                  // ...bổ sung các trường khác nếu cần
+                }
+              };
+            }
+            await updateMembershipStatus(membership);
+            console.log('MembershipStatus sau update:', membership);
           } else {
              // Fallback nếu server không trả về userMembership (kịch bản cũ)
             if (packageData) {

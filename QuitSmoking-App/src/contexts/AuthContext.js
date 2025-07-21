@@ -190,11 +190,8 @@ export const AuthProvider = ({ children }) => {
   // Update membership status in context and storage
   const updateMembershipStatus = useCallback(async (membershipData) => {
     try {
-      // Directly update the state from the payment capture response
+      console.log('updateMembershipStatus CALLED WITH:', membershipData);
       setMembershipStatus(membershipData);
-
-      // We can also re-sync with the server to be absolutely sure
-      // await syncMembershipStatus();
     } catch (error) {
       console.error('Error updating membership status:', error);
       throw error;

@@ -2,8 +2,10 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { MaterialCommunityIcons, MaterialIcons } from '@expo/vector-icons';
 import { useAuth } from '../contexts/AuthContext';
+import { useNavigation } from '@react-navigation/native';
 
-const ProgressSummary = ({ navigation, route }) => {
+const ProgressSummary = (props) => {
+  const navigation = useNavigation();
   const { user, updateUserProfile } = useAuth();
   const [summaryData, setSummaryData] = useState({
     cigarettesAvoided: 0,
@@ -12,14 +14,14 @@ const ProgressSummary = ({ navigation, route }) => {
 
   useEffect(() => {
     // Get data from route params first, then fall back to user profile data
-    const routeData = route.params || {};
+    const routeData = props.route.params || {};
     const userData = user || {};
     
     setSummaryData({
       cigarettesAvoided: routeData.cigarettesAvoided || userData.cigarettesAvoided || 0,
       moneySaved: routeData.moneySaved || userData.moneySaved || 0
     });
-  }, [route.params, user]);
+  }, [props.route.params, user]);
 
   const handleNext = async () => {
     // Cập nhật trạng thái isProfileComplete thành true
@@ -30,8 +32,8 @@ const ProgressSummary = ({ navigation, route }) => {
       moneySaved: summaryData.moneySaved,
       smokingData: user?.smokingData
     });
-    // Điều hướng đến màn hình Hồ sơ
-    navigation.navigate('ProfileScreen');
+   
+    navigation.navigate('QuitPlanScreen'); 
   };
 
   return (

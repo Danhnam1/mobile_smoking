@@ -1,16 +1,14 @@
 import { Platform } from "react-native";
-// Define the local IP address for development on physical devices.
-// Replace this with your computer's local IP address.
-export const LOCAL_IP_ADDRESS = "192.168.100.12"; // EXAMPLE: '192.168.1.100'
 
-// // Define and export the base URL for the API.
-// // This handles the difference between Android Emulator and other environments.
+export const LOCAL_IP_ADDRESS = "192.168.100.3"; 
+
+
 export const API_BASE_URL =
   Platform.OS === "android"
-    ? "http://10.0.2.2:3000/api" // Special address for Android Emulator
-    : `http://${LOCAL_IP_ADDRESS}:3000/api`; // Local IP for iOS and physical devices
+    ? "http://10.0.2.2:3000/api" 
+    : `http://${LOCAL_IP_ADDRESS}:3000/api`; 
 
-// export const API_BASE_URL = 'http://localhost:3000/api';
+// export const API_BASE_URL = 'https://smoking-cessation-backend.onrender.com/api';
 // Other configurations
 export const APP_CONFIG = {
   VERSION: "1.0.0",
