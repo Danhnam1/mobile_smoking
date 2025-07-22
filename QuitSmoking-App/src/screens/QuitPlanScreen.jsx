@@ -150,25 +150,6 @@ const QuitPlanScreen = ({ navigation }) => {
 
       const response = await createQuitPlan(planData, token);
 
-      // Đóng session chat cũ nếu có
-      try {
-        const sessionRes = await fetch(`${API_BASE_URL}/chat/session`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        const sessionJson = await sessionRes.json();
-        if (sessionJson?.data?._id) {
-          await fetch(
-            `${API_BASE_URL}/chat/session/${sessionJson.data._id}/close`,
-            {
-              method: "POST",
-              headers: { Authorization: `Bearer ${token}` },
-            }
-          );
-          console.log("Closed old chat session:", sessionJson.data._id);
-        }
-      } catch (closeErr) {
-        console.log("Không thể đóng session chat cũ:", closeErr.message);
-      }
 
       Alert.alert("Success", "Quit Plan created successfully!");
       navigation.navigate("Main", {
