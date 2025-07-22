@@ -1,6 +1,6 @@
 import { Platform } from "react-native";
 
-export const LOCAL_IP_ADDRESS = "192.168.100.147"; // EXAMPLE: '192.168.1.100'
+// export const LOCAL_IP_ADDRESS = "192.168.100.10"; // EXAMPLE: '192.168.1.100'
 
 
 
