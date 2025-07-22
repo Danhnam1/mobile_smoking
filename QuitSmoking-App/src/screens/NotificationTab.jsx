@@ -15,9 +15,11 @@ import {
   deleteAll,
 } from "../api/notification";
 import { useAuth } from "../contexts/AuthContext";
+import { useNotification } from "../contexts/NotificationContext";
 
 const NotificationTab = () => {
   const { token } = useAuth();
+  const { setTotalCount } = useNotification();
   const [notifications, setNotifications] = useState([]);
   const [refreshing, setRefreshing] = useState(false);
 
@@ -26,10 +28,13 @@ const NotificationTab = () => {
     setRefreshing(true);
     try {
       const res = await getAll(token);
-      console.log("notidata>>>>", res);
       setNotifications(res || []);
+      // Đếm lại số chưa đọc
+      const unread = (res || []).filter((n) => !n.is_read).length;
+      setTotalCount(unread);
     } catch (err) {
       setNotifications([]);
+      setTotalCount(0);
     }
     setRefreshing(false);
   };
@@ -41,11 +46,13 @@ const NotificationTab = () => {
   const handleMarkAllAsRead = async () => {
     await markAsReadAll(token);
     setNotifications((prev) => prev.map((n) => ({ ...n, is_read: true })));
+    setTotalCount(0); // Đặt badge về 0
   };
 
   const handleClearAll = async () => {
     await deleteAll(token);
     setNotifications([]);
+    setTotalCount(0);
   };
 
   const handleClickItem = async (noti) => {
@@ -54,6 +61,8 @@ const NotificationTab = () => {
       setNotifications((prev) =>
         prev.map((n) => (n._id === noti._id ? { ...n, is_read: true } : n))
       );
+      // Đếm lại số chưa đọc
+      setTotalCount((prev) => Math.max(0, prev - 1));
     }
     // Có thể mở modal chi tiết tại đây nếu muốn
   };

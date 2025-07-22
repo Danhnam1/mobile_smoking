@@ -38,12 +38,15 @@ import Introduce from "./src/components/Introduce";
 import Help from "./src/components/Help";
 import TermOfUse from "./src/components/TermOfUse";
 import CoachUserDetail from "./src/screens/CoachUserDetail";
+import { useNotification } from "./src/contexts/NotificationContext";
+import { NotificationProvider } from "./src/contexts/NotificationContext";
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
 
 function MainTabNavigator() {
   const { user } = useAuth();
   const role = user?.role;
+  const { totalCount } = useNotification();
 
   if (role === "coach") {
     return (
@@ -157,7 +160,10 @@ function MainTabNavigator() {
         <Tab.Screen
           name="NotificationTab"
           component={NotificationTab}
-          options={{ title: "Notification" }}
+          options={{
+            title: "Notification",
+            tabBarBadge: totalCount > 0 ? totalCount : undefined,
+          }}
         />
       </Tab.Navigator>
     );
@@ -226,7 +232,6 @@ function Navigation() {
       <Stack.Screen name="Help" component={Help} />
       <Stack.Screen name="TermOfUse" component={TermOfUse} />
       <Stack.Screen name="CoachUserDetail" component={CoachUserDetail} />
-
     </Stack.Navigator>
   );
 }
@@ -234,9 +239,11 @@ function Navigation() {
 export default function App() {
   return (
     <AuthProvider>
-      <NavigationContainer>
-        <Navigation />
-      </NavigationContainer>
+      <NotificationProvider>
+        <NavigationContainer>
+          <Navigation />
+        </NavigationContainer>
+      </NotificationProvider>
     </AuthProvider>
   );
 }
