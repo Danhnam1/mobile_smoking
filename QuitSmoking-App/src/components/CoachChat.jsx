@@ -11,9 +11,7 @@ import {
 import { io } from "socket.io-client";
 import {
   getOrCreateSession,
-  getSessionByCoach,
   getMessages,
-  closeSession,
 } from "../api/chat";
 // import CoachVideoCall from "./CoachVideoCall";
 import { LOCAL_IP_ADDRESS, SOCKET_URL } from "../config/config";
@@ -87,11 +85,7 @@ const CoachChat = () => {
     setupChat();
     return () => {
       socketRef.current?.disconnect();
-      // if (sessionIdRef.current) { // Sử dụng sessionId từ ref
-      //   closeSession(token, sessionIdRef.current)
-      //     .then(res => console.log("Session closed on unmount:", res))
-      //     .catch(err => console.error("Failed to close session on unmount:", err));
-      // }
+
     };
   }, []); // Mảng dependency rỗng để chỉ chạy một lần
 

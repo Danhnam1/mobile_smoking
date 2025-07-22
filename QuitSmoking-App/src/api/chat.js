@@ -30,13 +30,4 @@ export const getMessages = async (token, sessionId) => {
     return response.json();
 };
 
-export const closeSession = async (token, sessionId) => {
-    const response = await fetch(`${API_BASE_URL}/chat/messages/${sessionId}/close`, {
-        method: 'POST',
-        headers: {
-            'Authorization': `Bearer ${token}`
-        }
-    });
-    console.log("👌👌👌")
-    return response.json();
-};
+

@@ -12,7 +12,6 @@ import {
 import Icon from "react-native-vector-icons/Feather";
 import { io } from "socket.io-client";
 import {
-  closeSession,
   getMessages,
   getOrCreateSession,
   getSessionByCoach,
