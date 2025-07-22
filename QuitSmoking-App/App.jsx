@@ -30,13 +30,14 @@ import CheckoutScreen from "./src/screens/CheckoutScreen";
 import PayPalWebViewScreen from "./src/screens/PayPalWebViewScreen";
 import TransactionsScreen from "./src/screens/TransactionsScreen";
 import NotificationTab from "./src/screens/NotificationTab";
-import CoachDashboard from "./src/screens/DashBoard";
+import CoachUserScreen from "./src/screens/CoachUserScreen";
 import ChatListScreen from "./src/screens/ChatListScreen";
 import ChatDetailScreen from "./src/screens/ChatDetailScreen";
 import VideoCallScreen from "./src/screens/VideoCallScreen";
 import Introduce from "./src/components/Introduce";
 import Help from "./src/components/Help";
 import TermOfUse from "./src/components/TermOfUse";
+import CoachUserDetail from "./src/screens/CoachUserDetail";
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
 
@@ -85,18 +86,13 @@ function MainTabNavigator() {
       >
         <Tab.Screen
           name="Dashboard"
-          component={CoachDashboard}
+          component={CoachUserScreen}
           options={{ title: "Dashboard" }}
         />
         <Tab.Screen
           name="ChatMessage"
           component={ChatListScreen}
           options={{ title: "Chat Message" }}
-        />
-        <Tab.Screen
-          name="CoachQuitPlans"
-          component={QuitPlanScreen}
-          options={{ title: "Quit Plans" }}
         />
         <Tab.Screen
           name="SettingsScreen"
@@ -229,6 +225,8 @@ function Navigation() {
       <Stack.Screen name="Introduce" component={Introduce} />
       <Stack.Screen name="Help" component={Help} />
       <Stack.Screen name="TermOfUse" component={TermOfUse} />
+      <Stack.Screen name="CoachUserDetail" component={CoachUserDetail} />
+
     </Stack.Navigator>
   );
 }
