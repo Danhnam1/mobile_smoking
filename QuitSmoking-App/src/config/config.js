@@ -1,15 +1,15 @@
 import { Platform } from "react-native";
 
-export const LOCAL_IP_ADDRESS = "192.168.100.147"; // EXAMPLE: '192.168.1.100'
+export const LOCAL_IP_ADDRESS = "192.168.100.10"; // EXAMPLE: '192.168.1.100'
 
 
 
-// export const API_BASE_URL =
-//   Platform.OS === "android"
-//     ? "http://10.0.2.2:3000/api" 
-//     : `http://${LOCAL_IP_ADDRESS}:3000/api`; 
+export const API_BASE_URL =
+  Platform.OS === "android"
+    ? "http://10.0.2.2:3000/api" 
+    : `http://${LOCAL_IP_ADDRESS}:3000/api`; 
 
-export const API_BASE_URL = 'https://smoking-cessation-backend.onrender.com/api';
+// export const API_BASE_URL = 'https://smoking-cessation-backend.onrender.com/api';
 export const SOCKET_URL = 'https://smoking-cessation-backend.onrender.com';
 // Other configurations
 export const APP_CONFIG = {

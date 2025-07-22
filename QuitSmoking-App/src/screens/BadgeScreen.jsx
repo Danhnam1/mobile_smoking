@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useImperativeHandle, forwardRef } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Dimensions, Alert } from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import Svg, { Circle } from 'react-native-svg';
@@ -39,7 +39,7 @@ const ProgressCircle = ({ progress, size = 13, strokeWidth = 2, color = '#FF6B35
   );
 };
 
-const BadgeScreen = ({ navigation, isHomeScreen = true }) => {
+const BadgeScreen = forwardRef(({ navigation, isHomeScreen = true }, ref) => {
   const { user, token } = useAuth();
   const [allBadges, setAllBadges] = useState([]);
   const [userBadges, setUserBadges] = useState([]);
@@ -55,29 +55,35 @@ const BadgeScreen = ({ navigation, isHomeScreen = true }) => {
     return () => socket.disconnect();
   }, [token]);
 
+  const fetchAll = async () => {
+    setLoading(true);
+    try {
+      const headers = { Authorization: `Bearer ${token}` };
+      const allRes = await fetch(`${API_BASE_URL}/badges`, { headers });
+      const allData = await allRes.json();
+      const userRes = await fetch(`${API_BASE_URL}/badges/user`, { headers });
+      const userData = await userRes.json();
+      const memRes = await fetch(`${API_BASE_URL}/user-membership/me`, { headers });
+      const memData = memRes.status === 200 ? await memRes.json() : null;
+      setAllBadges(allData.badges || []);
+      setUserBadges(userData.badges || []);
+      setMembership(memData);
+    } catch (err) {
+      console.error('Badge API error:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchAll = async () => {
-      setLoading(true);
-      try {
-        const headers = { Authorization: `Bearer ${token}` };
-        const allRes = await fetch(`${API_BASE_URL}/badges`, { headers });
-        const allData = await allRes.json();
-        const userRes = await fetch(`${API_BASE_URL}/badges/user`, { headers });
-        const userData = await userRes.json();
-        const memRes = await fetch(`${API_BASE_URL}/user-membership/me`, { headers });
-        const memData = memRes.status === 200 ? await memRes.json() : null;
-        
-        setAllBadges(allData.badges || []);
-        setUserBadges(userData.badges || []);
-        setMembership(memData);
-      } catch (err) {
-        console.error('Badge API error:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
     if (token) fetchAll();
   }, [token]);
+  
+  // Expose reloadBadge cho parent qua ref
+
+  useImperativeHandle(ref, () => ({
+    reloadBadge: fetchAll
+  }));
 
   const achievedIds = userBadges.map(b => b._id);
   const isPro = membership?.package_id?.name === 'pro' && membership?.status === 'active';
@@ -321,7 +327,7 @@ const BadgeScreen = ({ navigation, isHomeScreen = true }) => {
       )}
     </View>
   );
-};
+});
 
 const styles = StyleSheet.create({
   sectionContainer: {
