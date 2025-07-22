@@ -35,12 +35,13 @@ const CoachChat = () => {
   const [setupError, setSetupError] = useState(false);
   const navigation = useNavigation();
   const [coachName, setCoachName] = useState("");
+  const sessionIdRef = useRef(null);
 
   useEffect(() => {
     const setupChat = async () => {
       try {
         const response = await getOrCreateSession(token);
-        console.log("getOrCreateSession response:", response);
+        console.log("getOrCreateSession response:", response.data);
         if (!response || !response.data) {
           setSetupError(true);
           console.error("Response getOrCreateSession:", response);
@@ -55,6 +56,7 @@ const CoachChat = () => {
           return;
         }
         setSessionId(sid);
+        sessionIdRef.current = sid; // Lưu sessionId vào ref
 
         const msgRes = await getMessages(token, sid);
         console.log("getMessages response:", msgRes);
@@ -83,8 +85,15 @@ const CoachChat = () => {
     };
 
     setupChat();
-    return () => socketRef.current?.disconnect();
-  }, []);
+    return () => {
+      socketRef.current?.disconnect();
+      if (sessionIdRef.current) { // Sử dụng sessionId từ ref
+        closeSession(token, sessionIdRef.current)
+          .then(res => console.log("Session closed on unmount:", res))
+          .catch(err => console.error("Failed to close session on unmount:", err));
+      }
+    };
+  }, []); // Mảng dependency rỗng để chỉ chạy một lần
 
   useEffect(() => {
     if (scrollViewRef.current) {

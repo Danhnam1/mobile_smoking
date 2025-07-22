@@ -37,5 +37,6 @@ export const closeSession = async (token, sessionId) => {
             'Authorization': `Bearer ${token}`
         }
     });
+    console.log("👌👌👌")
     return response.json();
 };
