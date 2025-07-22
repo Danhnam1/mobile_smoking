@@ -11,10 +11,15 @@ import {
 } from "react-native";
 import Icon from "react-native-vector-icons/Feather";
 import { io } from "socket.io-client";
-import { closeSession, getMessages, getOrCreateSession, getSessionByCoach } from "../api/chat";
+import {
+  closeSession,
+  getMessages,
+  getOrCreateSession,
+  getSessionByCoach,
+} from "../api/chat";
 import { useAuth } from "../contexts/AuthContext";
-import {LOCAL_IP_ADDRESS} from "../config/config"
-import { useNavigation, useRoute } from '@react-navigation/native';
+import { LOCAL_IP_ADDRESS } from "../config/config";
+import { useNavigation, useRoute } from "@react-navigation/native";
 export default function ChatForCoach() {
   const { token, user } = useAuth();
   const currentUserId = user?._id;
@@ -30,7 +35,9 @@ export default function ChatForCoach() {
   useEffect(() => {
     if (!token) return;
 
-    socketRef.current = io(`http://${LOCAL_IP_ADDRESS}:3000/coach`, { auth: { token } });
+    socketRef.current = io(`http://${LOCAL_IP_ADDRESS}:3000/coach`, {
+      auth: { token },
+    });
 
     socketRef.current.on("connect", () => {
       console.log("[Coach] Socket connected");
@@ -40,6 +47,9 @@ export default function ChatForCoach() {
       if (selectedChat && msg.session_id === selectedChat._id) {
         setMessages((prev) => [...prev, msg]);
       }
+    });
+    socketRef.current.on("connect_error", (err) => {
+      console.log("🚫 Socket connect error:", err.message);
     });
 
     return () => socketRef.current.disconnect();
@@ -57,9 +67,10 @@ export default function ChatForCoach() {
       if (res?.data?.length > 0) {
         if (coachIdFromParams) {
           // Tìm session với coachId đúng
-          const found = res.data.find(item =>
-            item.coach_id?._id === coachIdFromParams ||
-            item.coach_id === coachIdFromParams
+          const found = res.data.find(
+            (item) =>
+              item.coach_id?._id === coachIdFromParams ||
+              item.coach_id === coachIdFromParams
           );
           if (found) {
             selectChat(found);
@@ -76,18 +87,24 @@ export default function ChatForCoach() {
   const selectChat = async (session) => {
     setSelectedChat(session);
     try {
-      const res = await getMessages(token ,session._id);
-      setMessages(res?.data?.data || []);
+      const res = await getMessages(token, session._id);
+      console.log("🟢 getMessages:", res.data);
+      setMessages(res?.data || []); // ✅ Chỉ cần res.data
       socketRef.current.emit("joinSession", session._id);
     } catch (err) {
-      console.error("Không thể tải tin nhắn");
+      console.error("Không thể tải tin nhắn", err);
     }
   };
 
   const handleSend = () => {
     if (!input.trim() || !selectedChat) return;
+    console.log("🔵 Sending:", {
+      session_id: selectedChat._id,
+      content: input,
+    });
+    
     socketRef.current.emit("sendMessage", {
-      sessionId: selectedChat._id,
+      session_id: selectedChat._id,
       content: input,
     });
     setInput("");
@@ -102,7 +119,7 @@ export default function ChatForCoach() {
           data={chatList}
           keyExtractor={(item) => item._id}
           renderItem={({ item }) => {
-            console.log('Sidebar user_id:', item.user_id);
+            console.log("Sidebar user_id:", item.user_id);
             return (
               <TouchableOpacity
                 style={[
@@ -113,13 +130,19 @@ export default function ChatForCoach() {
               >
                 <Image
                   source={{
-                    uri: `https://api.dicebear.com/7.x/miniavs/svg?seed=${item.user_id?.full_name || 'unknown'}`,
+                    uri: `https://api.dicebear.com/7.x/miniavs/svg?seed=${
+                      item.user_id?.full_name || "unknown"
+                    }`,
                   }}
                   style={styles.avatar}
                 />
                 <View style={{ flex: 1 }}>
-                  <Text style={styles.chatName}>{item.user_id?.full_name || 'Không rõ'}</Text>
-                  <Text style={styles.chatEmail}>{item.user_id?.email || ''}</Text>
+                  <Text style={styles.chatName}>
+                    {item.user_id?.full_name || "Không rõ"}
+                  </Text>
+                  <Text style={styles.chatEmail}>
+                    {item.user_id?.email || ""}
+                  </Text>
                 </View>
               </TouchableOpacity>
             );
@@ -129,89 +152,99 @@ export default function ChatForCoach() {
 
       {/* Main Chat Area */}
       <View style={styles.chatArea}>
-        {selectedChat && (
-          console.log('Header selectedChat.user_id:', selectedChat.user_id),
-          <View style={styles.chatCard}>
-            {/* Header */}
-            <View style={styles.chatHeader}>
-              <View style={styles.headerLeft}>
-                <Image
-                  source={{
-                    uri: `https://api.dicebear.com/7.x/miniavs/svg?seed=${selectedChat.coach_id?.full_name || selectedChat.user_id?.full_name || 'unknown'}`,
-                  }}
-                  style={styles.avatarLarge}
-                />
-                <View>
-                  <Text style={styles.chatUserName}>
-                    {/* Ưu tiên tên coach nếu có */}
-                    {selectedChat.coach_id?.full_name || selectedChat.user_id?.full_name || 'Không rõ'}
-                  </Text>
-                  <Text style={styles.chatStatus}>Coach</Text>
+        {selectedChat &&
+          (console.log("Header selectedChat.user_id:", selectedChat.user_id),
+          (
+            <View style={styles.chatCard}>
+              {/* Header */}
+              <View style={styles.chatHeader}>
+                <View style={styles.headerLeft}>
+                  <Image
+                    source={{
+                      uri: `https://api.dicebear.com/7.x/miniavs/svg?seed=${
+                        selectedChat.coach_id?.full_name ||
+                        selectedChat.user_id?.full_name ||
+                        "unknown"
+                      }`,
+                    }}
+                    style={styles.avatarLarge}
+                  />
+                  <View>
+                    <Text style={styles.chatUserName}>
+                      {/* Ưu tiên tên coach nếu có */}
+                      {selectedChat.coach_id?.full_name ||
+                        selectedChat.user_id?.full_name ||
+                        "Không rõ"}
+                    </Text>
+                    <Text style={styles.chatStatus}>Coach</Text>
+                  </View>
                 </View>
+                <TouchableOpacity
+                  style={styles.videoButton}
+                  onPress={() => {
+                    const memberId =
+                      selectedChat.user_id?._id || selectedChat.user_id || null;
+                    if (memberId) {
+                      navigation.navigate("VideoCallScreen", { memberId });
+                    } else {
+                      alert("Không tìm thấy userId của thành viên!");
+                    }
+                  }}
+                >
+                  <Icon name="video" size={18} color="#fff" />
+                  <Text style={styles.videoButtonText}>Gọi video</Text>
+                </TouchableOpacity>
               </View>
-              <TouchableOpacity
-                style={styles.videoButton}
-                onPress={() => {
-                  const memberId = selectedChat.user_id?._id || selectedChat.user_id || null;
-                  if (memberId) {
-                    navigation.navigate('VideoCallScreen', { memberId });
-                  } else {
-                    alert('Không tìm thấy userId của thành viên!');
-                  }
-                }}
-              >
-                <Icon name="video" size={18} color="#fff" />
-                <Text style={styles.videoButtonText}>Gọi video</Text>
-              </TouchableOpacity>
-            </View>
 
-            {/* Messages */}
-            <ScrollView style={styles.messages}>
-              {messages.map((msg) => {
-                const isMe =
-                  msg.user_id === user._id ||
-                  msg.user_id?._id === user._id;
-                return (
-                  <View
-                    key={msg._id}
-                    style={[
-                      styles.messageRow,
-                      isMe ? styles.messageRight : styles.messageLeft,
-                    ]}
-                  >
+              {/* Messages */}
+              <ScrollView style={styles.messages}>
+                {messages.map((msg) => {
+                  const isMe =
+                    msg.user_id === user._id || msg.user_id?._id === user._id;
+                  return (
                     <View
+                      key={msg._id}
                       style={[
-                        styles.messageBubble,
-                        isMe ? styles.bubbleMe : styles.bubbleOther,
+                        styles.messageRow,
+                        isMe ? styles.messageRight : styles.messageLeft,
                       ]}
                     >
-                      <Text style={styles.messageText}>{msg.content}</Text>
+                      <View
+                        style={[
+                          styles.messageBubble,
+                          isMe ? styles.bubbleMe : styles.bubbleOther,
+                        ]}
+                      >
+                        <Text style={styles.messageText}>{msg.content}</Text>
+                      </View>
+                      <Text style={styles.messageTime}>
+                        {new Date(msg.sent_at).toLocaleTimeString([], {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
+                      </Text>
                     </View>
-                    <Text style={styles.messageTime}>
-                      {new Date(msg.sent_at).toLocaleTimeString([], {
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      })}
-                    </Text>
-                  </View>
-                );
-              })}
-            </ScrollView>
+                  );
+                })}
+              </ScrollView>
 
-            {/* Input */}
-            <View style={styles.inputRow}>
-              <TextInput
-                style={styles.input}
-                placeholder="Nhập tin nhắn..."
-                value={input}
-                onChangeText={setInput}
-              />
-              <TouchableOpacity style={styles.sendButton} onPress={handleSend}>
-                <Icon name="send" size={18} color="#fff" />
-              </TouchableOpacity>
+              {/* Input */}
+              <View style={styles.inputRow}>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Nhập tin nhắn..."
+                  value={input}
+                  onChangeText={setInput}
+                />
+                <TouchableOpacity
+                  style={styles.sendButton}
+                  onPress={handleSend}
+                >
+                  <Icon name="send" size={18} color="#fff" />
+                </TouchableOpacity>
+              </View>
             </View>
-          </View>
-        )}
+          ))}
       </View>
     </View>
   );

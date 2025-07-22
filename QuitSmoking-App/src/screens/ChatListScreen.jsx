@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from "react";
+import React, { useState, useCallback  } from "react";
+import { useFocusEffect } from "@react-navigation/native";
 import {
   View,
   Text,
@@ -14,13 +15,16 @@ export default function ChatListScreen({ navigation }) {
   const { token } = useAuth();
   const [chatList, setChatList] = useState([]);
 
-  useEffect(() => {
-    fetchChats();
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      fetchChats();
+    }, [])
+  );
 
   const fetchChats = async () => {
     try {
       const res = await getSessionByCoach(token);
+      console.log(res.data)
       setChatList(res?.data || []);
     } catch (err) {
       console.error("Không thể tải danh sách chat", err);

@@ -16,7 +16,7 @@ import {
   closeSession,
 } from "../api/chat";
 // import CoachVideoCall from "./CoachVideoCall";
-import { LOCAL_IP_ADDRESS } from "../config/config";
+import { LOCAL_IP_ADDRESS, SOCKET_URL } from "../config/config";
 import Icon from "react-native-vector-icons/Feather";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useAuth } from "../contexts/AuthContext";
@@ -65,7 +65,7 @@ const CoachChat = () => {
         }
         setMessages(msgRes.data); // SỬA Ở ĐÂY nếu msgRes.data là mảng tin nhắn
 
-        socketRef.current = io(`http://${LOCAL_IP_ADDRESS}:3000/coach`, {
+        socketRef.current = io(`${SOCKET_URL}/coach`, {
           auth: { token },
         });
 

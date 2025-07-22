@@ -14,7 +14,7 @@ import Icon from "react-native-vector-icons/Feather";
 import { io } from "socket.io-client";
 import { getMessages } from "../api/chat";
 import { useAuth } from "../contexts/AuthContext";
-import { LOCAL_IP_ADDRESS } from "../config/config";
+import { LOCAL_IP_ADDRESS, SOCKET_URL } from "../config/config";
 const getAvatarText = (name = "") => {
   const words = name.trim().split(" ");
   if (words.length === 0) return "?";
@@ -31,10 +31,13 @@ export default function ChatDetailScreen({ route, navigation }) {
   const scrollViewRef = useRef(null);
 
   useEffect(() => {
+    console.log("SESSION><><><><<><><>>", session)
     fetchMessages();
-    socketRef.current = io(`http://${LOCAL_IP_ADDRESS}:3000/coach`, {
+    socketRef.current = io(`${SOCKET_URL}/coach`, {
       auth: { token },
+      transports: ["websocket"], // ép dùng websocket, tránh polling
     });
+    
 
     socketRef.current.on("connect", () => {
       socketRef.current.emit("joinSession", session._id);
@@ -45,7 +48,13 @@ export default function ChatDetailScreen({ route, navigation }) {
         setMessages((prev) => [...prev, msg]);
       }
     });
-
+    socketRef.current.on("connect_error", (err) => {
+      console.error("🚫 Socket connect error:", err.message);
+    });
+    
+    socketRef.current.on("connect", () => {
+      console.log("✅ Socket connected to coach namespace");
+    });
     return () => socketRef.current.disconnect();
   }, []);
 
@@ -59,13 +68,28 @@ export default function ChatDetailScreen({ route, navigation }) {
   };
 
   const sendMessage = () => {
-    if (!input.trim()) return;
-    socketRef.current.emit("sendMessage", {
+    if (!input.trim()) {
+      console.log("🚫 Không có nội dung tin nhắn");
+      return;
+    }
+  
+    const payload = {
       sessionId: session._id,
       content: input,
-    });
+    };
+  
+    console.log("📤 Đang gửi message:", payload);
+  
+    if (!socketRef.current || !socketRef.current.connected) {
+      console.log("❌ Socket chưa kết nối");
+      return;
+    }
+  
+    socketRef.current.emit("sendMessage", payload);
     setInput("");
   };
+  
+  
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: "#f5f5f5" }}>
@@ -83,7 +107,7 @@ export default function ChatDetailScreen({ route, navigation }) {
             </View>
             <View style={{ flexDirection: "row", alignItems: "center" }}>
               <Text style={styles.headerTitle}>
-                {session.user_id?.full_name || "Không rõ"}
+                {session.user_id?.full_name || user.full_name || "Coach"}
               </Text>
               <TouchableOpacity
                 style={{
