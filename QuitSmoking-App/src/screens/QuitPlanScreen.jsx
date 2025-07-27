@@ -222,7 +222,7 @@ const QuitPlanScreen = ({ navigation }) => {
           />
 
           {/* Coach Selection for Pro Members */}
-          {membershipStatus?.package_id?.name?.includes("Pro") ? (
+          {membershipStatus?.package_id?.type?.includes("pro") ? (
             <>
               <Coach
                 setSelectedCoachId={setSelectedCoachId}

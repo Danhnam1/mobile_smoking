@@ -17,9 +17,15 @@ const isJsonResponse = (response) => {
 };
 
 // Fetches user details
-export const fetchUser = async (userId) => {
+export const fetchUser = async (userId, token) => {
   try {
-    const response = await fetch(`${API_BASE_URL}/users/${userId}`);
+    const headers = {};
+    if (token) {
+      headers["Authorization"] = `Bearer ${token}`;
+    }
+    const response = await fetch(`${API_BASE_URL}/users/${userId}`, {
+      headers: headers,
+    });
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
     }

@@ -86,7 +86,7 @@ const BadgeScreen = forwardRef(({ navigation, isHomeScreen = true }, ref) => {
   }));
 
   const achievedIds = userBadges.map(b => b._id);
-  const isPro = membership?.package_id?.name === 'pro' && membership?.status === 'active';
+  const isPro = membership?.package_id?.type === 'pro' && membership?.status === 'active';
 
   // Sort badges by priority: achieved -> near achieved -> rare -> others
   const sortBadges = (badges) => {

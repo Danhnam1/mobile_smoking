@@ -40,6 +40,7 @@ import TermOfUse from "./src/components/TermOfUse";
 import CoachUserDetail from "./src/screens/CoachUserDetail";
 import { useNotification } from "./src/contexts/NotificationContext";
 import { NotificationProvider } from "./src/contexts/NotificationContext";
+import ProfileCoachScreen from "./src/screens/ProfileCoachScreen";
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
 
@@ -232,6 +233,7 @@ function Navigation() {
       <Stack.Screen name="Help" component={Help} />
       <Stack.Screen name="TermOfUse" component={TermOfUse} />
       <Stack.Screen name="CoachUserDetail" component={CoachUserDetail} />
+      <Stack.Screen name="ProfileCoachScreen" component={ProfileCoachScreen} options={{ title: 'Thông tin Coach' }}/>
     </Stack.Navigator>
   );
 }

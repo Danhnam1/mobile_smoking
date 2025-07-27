@@ -77,14 +77,14 @@ const MembershipItem = ({ item }) => {
     <View style={styles.membershipItem}>
       <View style={styles.membershipIcon}>
         <Ionicons
-          name={item.package_id?.name === "pro" ? "crown" : "shield-checkmark"}
+          name={item.package_id?.type === "pro" ? "crown" : "shield-checkmark"}
           size={24}
-          color={item.package_id?.name === "pro" ? "#FFD700" : "#4ECB71"}
+          color={item.package_id?.type === "pro" ? "#FFD700" : "#4ECB71"}
         />
       </View>
       <View style={styles.membershipDetails}>
         <Text style={styles.membershipPackageName}>
-          {item.package_id?.name === "default"
+          {item.package_id?.type === "default"
             ? "Gói Mặc định"
             : `Gói ${item.package_id?.name?.toUpperCase()}`}
         </Text>

@@ -213,23 +213,23 @@ const MembershipPackageScreen = ({ navigation, route }) => {
             key={pkg._id}
             style={[
               styles.packageCard,
-              pkg.name === "pro" && styles.proPackageCard,
+              pkg.type === "pro" && styles.proPackageCard,
               isCurrentPackage && styles.currentPackageCard,
             ]}
           >
             <View style={styles.packageHeader}>
               <MaterialCommunityIcons
-                name={pkg.name === "pro" ? "crown" : "leaf"}
+                name={pkg.type === "pro" ? "crown" : "leaf"}
                 size={30}
-                color={pkg.name === "pro" ? "#FFD700" : "#4ECB71"}
+                color={pkg.type === "pro" ? "#FFD700" : "#4ECB71"}
               />
               <Text
                 style={[
                   styles.packageName,
-                  pkg.name === "pro" && styles.proPackageName,
+                  pkg.type === "pro" && styles.proPackageName,
                 ]}
               >
-                {pkg.name === "default" ? "Mặc định" : pkg.name.toUpperCase()}
+                {pkg.type === "default" ? "Mặc định" : pkg.name.toUpperCase()}
               </Text>
               {isCurrentPackage && (
                 <View style={styles.currentBadge}>

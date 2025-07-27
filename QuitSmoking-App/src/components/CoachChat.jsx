@@ -169,11 +169,20 @@ const CoachChat = () => {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>
-          {session?.coach_id?.full_name
-            ? session.coach_id.full_name
-            : "Chat với Coach"}
-        </Text>
+        <TouchableOpacity
+          onPress={() => {
+            if (session?.coach_id?._id) {
+              navigation.navigate("ProfileCoachScreen", { id: session.coach_id._id });
+            }
+          }}
+          style={styles.headerTitleContainer}
+        >
+          <Text style={styles.headerTitle}>
+            {session?.coach_id?.full_name
+              ? session.coach_id.full_name
+              : "Chat với Coach"}
+          </Text>
+        </TouchableOpacity>
         {!setupError && (
           <TouchableOpacity
             style={styles.videoBtn}
@@ -521,6 +530,10 @@ const styles = StyleSheet.create({
   },
   ownMessage: { alignSelf: "flex-end" },
   otherMessage: { alignSelf: "flex-start" },
+  headerTitleContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
 });
 
 export default CoachChat;
