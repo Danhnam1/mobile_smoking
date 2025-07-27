@@ -17,7 +17,7 @@ import { Ionicons } from "@expo/vector-icons";
 import DateTimePickerModal from "react-native-modal-datetime-picker";
 import Coach from "../components/Coach";
 import { API_BASE_URL } from "../config/config";
-import { useFocusEffect } from '@react-navigation/native';
+import { useFocusEffect } from "@react-navigation/native";
 
 const QuitPlanScreen = ({ navigation }) => {
   const { user, token, membershipStatus } = useAuth();
@@ -63,22 +63,7 @@ const QuitPlanScreen = ({ navigation }) => {
   );
 
   // Debug membership status
-  useEffect(() => {
-    console.log("QuitPlanScreen - membershipStatus context:", membershipStatus);
-    console.log("QuitPlanScreen - Package Name:", membershipStatus?.package_name);
-    console.log("QuitPlanScreen - Name:", membershipStatus?.name);
-    console.log(
-      "QuitPlanScreen - Package ID Name:",
-      membershipStatus?.package_id?.name
-    );
-    console.log("QuitPlanScreen - Package ID:", membershipStatus?.package_id);
-    console.log(
-      "Is Pro Member:",
-      membershipStatus?.package_name === "pro" ||
-        membershipStatus?.name === "pro" ||
-        membershipStatus?.package_id?.name === "pro"
-    );
-  }, [membershipStatus]);
+  useEffect(() => {}, [membershipStatus]);
 
   const addReason = () => {
     setReasons([...reasons, ""]);
@@ -149,7 +134,6 @@ const QuitPlanScreen = ({ navigation }) => {
       console.log("Creating quit plan with data:", planData);
 
       const response = await createQuitPlan(planData, token);
-
 
       Alert.alert("Success", "Quit Plan created successfully!");
       navigation.navigate("Main", {
@@ -238,12 +222,12 @@ const QuitPlanScreen = ({ navigation }) => {
           />
 
           {/* Coach Selection for Pro Members */}
-          {membershipStatus?.package_name === "pro" ||
-          membershipStatus?.name === "pro" ||
-          membershipStatus?.package_id?.name === "pro" ? (
+          {membershipStatus?.package_id?.name?.includes("Pro") ? (
             <>
-              <Coach setSelectedCoachId={setSelectedCoachId} setSelectedCoach={setSelectedCoach} />
-             
+              <Coach
+                setSelectedCoachId={setSelectedCoachId}
+                setSelectedCoach={setSelectedCoach}
+              />
             </>
           ) : (
             <View style={styles.proFeatureContainer}>

@@ -1,4 +1,4 @@
-import React, { useState, useCallback  } from "react";
+import React, { useState, useCallback } from "react";
 import { useFocusEffect } from "@react-navigation/native";
 import {
   View,
@@ -7,13 +7,16 @@ import {
   FlatList,
   StyleSheet,
   SafeAreaView,
+  Image,
 } from "react-native";
 import { getSessionByCoach } from "../api/chat";
 import { useAuth } from "../contexts/AuthContext";
+import { API_BASE_URL } from "../config/config";
 
 export default function ChatListScreen({ navigation }) {
   const { token } = useAuth();
   const [chatList, setChatList] = useState([]);
+  const [userAvatars, setUserAvatars] = useState({}); // Store user avatars
 
   useFocusEffect(
     useCallback(() => {
@@ -21,11 +24,66 @@ export default function ChatListScreen({ navigation }) {
     }, [])
   );
 
+  const fetchUserAvatars = async (userIds) => {
+    try {
+      console.log("🔍 ChatList: Fetching avatars for user IDs:", userIds);
+      const avatarPromises = userIds.map(async (userId) => {
+        try {
+          console.log(`🔍 ChatList: Fetching user ${userId}...`);
+          const response = await fetch(`${API_BASE_URL}/users/${userId}`, {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          });
+          console.log(
+            `🔍 ChatList: Response status for ${userId}:`,
+            response.status
+          );
+          if (response.ok) {
+            const userData = await response.json();
+            console.log(`🔍 ChatList: User data for ${userId}:`, userData);
+            return { userId, avatar: userData.avatar };
+          } else {
+            console.log(
+              `❌ ChatList: Response not ok for ${userId}:`,
+              response.status
+            );
+          }
+        } catch (error) {
+          console.log(
+            `❌ ChatList: Error fetching avatar for user ${userId}:`,
+            error
+          );
+        }
+        return { userId, avatar: null };
+      });
+
+      const avatarResults = await Promise.all(avatarPromises);
+      console.log("🔍 ChatList: Avatar results:", avatarResults);
+      const avatarMap = {};
+      avatarResults.forEach(({ userId, avatar }) => {
+        if (avatar) avatarMap[userId] = avatar;
+      });
+
+      setUserAvatars(avatarMap);
+      console.log("✅ ChatList: User avatars loaded:", avatarMap);
+    } catch (error) {
+      console.log("❌ ChatList: Error fetching user avatars:", error);
+    }
+  };
+
   const fetchChats = async () => {
     try {
       const res = await getSessionByCoach(token);
-      console.log(res.data)
-      setChatList(res?.data || []);
+      console.log(res.data);
+      const chatData = res?.data || [];
+      setChatList(chatData);
+
+      // Extract unique user IDs and fetch their avatars
+      const userIds = [
+        ...new Set(chatData.map((item) => item.user_id?._id).filter(Boolean)),
+      ];
+      fetchUserAvatars(userIds);
     } catch (err) {
       console.error("Không thể tải danh sách chat", err);
     }
@@ -45,24 +103,54 @@ export default function ChatListScreen({ navigation }) {
       </View>
       <FlatList
         contentContainerStyle={styles.list}
-        data={chatList.filter(item => item.user_id)}
+        data={chatList.filter((item) => item.user_id)}
         keyExtractor={(item) => item._id}
-        renderItem={({ item }) => (
-          <TouchableOpacity
-            style={styles.item}
-            onPress={() => navigation.navigate("ChatDetail", { session: item })}
-          >
-            <View style={styles.avatar}>
-              <Text style={styles.avatarText}>
-                {getAvatarText(item.user_id?.full_name || 'Không rõ')}
-              </Text>
-            </View>
-            <View>
-              <Text style={styles.name}>{item.user_id?.full_name || 'Không rõ'}</Text>
-              <Text style={styles.email}>{item.user_id?.email || ''}</Text>
-            </View>
-          </TouchableOpacity>
-        )}
+        renderItem={({ item }) => {
+          // Get avatar for this specific user by ID
+          const userId = item.user_id?._id;
+          const userAvatar = userAvatars[userId];
+          console.log(
+            "🔍 ChatList user avatar for ID",
+            userId,
+            ":",
+            userAvatar
+          );
+
+          return (
+            <TouchableOpacity
+              style={styles.item}
+              onPress={() =>
+                navigation.navigate("ChatDetail", { session: item })
+              }
+            >
+              {userAvatar ? (
+                <Image
+                  source={{ uri: userAvatar }}
+                  style={styles.avatarImage}
+                  onError={(error) => {
+                    console.log(
+                      "❌ ChatList avatar loading error:",
+                      error.nativeEvent
+                    );
+                  }}
+                  defaultSource={require("../../assets/icon.png")}
+                />
+              ) : (
+                <View style={styles.avatar}>
+                  <Text style={styles.avatarText}>
+                    {getAvatarText(item.user_id?.full_name || "Không rõ")}
+                  </Text>
+                </View>
+              )}
+              <View>
+                <Text style={styles.name}>
+                  {item.user_id?.full_name || "Không rõ"}
+                </Text>
+                <Text style={styles.email}>{item.user_id?.email || ""}</Text>
+              </View>
+            </TouchableOpacity>
+          );
+        }}
       />
     </SafeAreaView>
   );
@@ -96,6 +184,12 @@ const styles = StyleSheet.create({
     backgroundColor: "#4ECB71",
     justifyContent: "center",
     alignItems: "center",
+    marginRight: 12,
+  },
+  avatarImage: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     marginRight: 12,
   },
   avatarText: { color: "#fff", fontWeight: "bold" },

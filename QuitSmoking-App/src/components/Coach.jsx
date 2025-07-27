@@ -7,6 +7,7 @@ import {
   ScrollView,
   ActivityIndicator,
   Alert,
+  Image,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { getAllCoaches } from "../api/user";
@@ -82,9 +83,16 @@ const Coach = ({ setSelectedCoachId, setSelectedCoach }) => {
               onPress={() => handleCoachSelection(coach)}
             >
               <View style={styles.coachInfo}>
-                <View style={styles.coachAvatar}>
-                  <Ionicons name="person" size={24} color="#4CAF50" />
-                </View>
+                {coach.avatar ? (
+                  <Image
+                    source={{ uri: coach.avatar }}
+                    style={styles.coachAvatarImage}
+                  />
+                ) : (
+                  <View style={styles.coachAvatar}>
+                    <Ionicons name="person" size={24} color="#4CAF50" />
+                  </View>
+                )}
                 <View style={styles.coachDetails}>
                   <Text style={styles.coachName}>{coach.full_name}</Text>
                   <Text style={styles.coachEmail}>{coach.email}</Text>
@@ -181,6 +189,12 @@ const styles = StyleSheet.create({
     backgroundColor: "#E8F5E9",
     justifyContent: "center",
     alignItems: "center",
+    marginRight: 15,
+  },
+  coachAvatarImage: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
     marginRight: 15,
   },
   coachDetails: {

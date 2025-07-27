@@ -7,14 +7,12 @@ import {
   ScrollView,
   StyleSheet,
   Modal,
+  Image,
 } from "react-native";
 import { io } from "socket.io-client";
-import {
-  getOrCreateSession,
-  getMessages,
-} from "../api/chat";
+import { getOrCreateSession, getMessages } from "../api/chat";
 // import CoachVideoCall from "./CoachVideoCall";
-import { LOCAL_IP_ADDRESS, SOCKET_URL } from "../config/config";
+import { LOCAL_IP_ADDRESS, SOCKET_URL, API_BASE_URL } from "../config/config";
 import Icon from "react-native-vector-icons/Feather";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useAuth } from "../contexts/AuthContext";
@@ -28,6 +26,7 @@ const CoachChat = () => {
   const [sessionId, setSessionId] = useState(null);
   const [input, setInput] = useState("");
   const [showCall, setShowCall] = useState(false);
+  const [userAvatars, setUserAvatars] = useState({}); // Store user avatars
   const scrollViewRef = useRef(null);
   const socketRef = useRef(null);
   const [setupError, setSetupError] = useState(false);
@@ -38,11 +37,13 @@ const CoachChat = () => {
   useEffect(() => {
     const setupChat = async () => {
       try {
+        console.log("🔍 Current user data:", user);
+        console.log("🔍 Current user avatar:", user?.avatar);
+
         const response = await getOrCreateSession(token);
         console.log("getOrCreateSession response:", response.data);
         if (!response || !response.data) {
           setSetupError(true);
-          console.error("Response getOrCreateSession:", response);
           return;
         }
         const sessionData = response.data; // SỬA Ở ĐÂY
@@ -63,7 +64,21 @@ const CoachChat = () => {
           console.error("Response getMessages:", msgRes);
           return;
         }
-        setMessages(msgRes.data); // SỬA Ở ĐÂY nếu msgRes.data là mảng tin nhắn
+        const messagesData = msgRes.data;
+        setMessages(messagesData);
+
+        // Extract unique user IDs and fetch their avatars
+        const userIds = [
+          ...new Set(
+            messagesData
+              .map((msg) => {
+                const senderId = msg.user_id?._id || msg.user_id;
+                return senderId;
+              })
+              .filter(Boolean)
+          ),
+        ];
+        fetchUserAvatars(userIds);
 
         socketRef.current = io(`${SOCKET_URL}/coach`, {
           auth: { token },
@@ -75,6 +90,11 @@ const CoachChat = () => {
 
         socketRef.current.on("newMessage", (msg) => {
           setMessages((prev) => [...prev, msg]);
+          // Fetch avatar for new message sender
+          const senderId = msg.user_id?._id || msg.user_id;
+          if (senderId && !userAvatars[senderId]) {
+            fetchUserAvatars([senderId]);
+          }
         });
       } catch (err) {
         setSetupError(true);
@@ -85,7 +105,6 @@ const CoachChat = () => {
     setupChat();
     return () => {
       socketRef.current?.disconnect();
-
     };
   }, []); // Mảng dependency rỗng để chỉ chạy một lần
 
@@ -94,6 +113,45 @@ const CoachChat = () => {
       scrollViewRef.current.scrollToEnd({ animated: true });
     }
   }, [messages]);
+
+  const fetchUserAvatars = async (userIds) => {
+    try {
+      console.log("🔍 Fetching avatars for user IDs:", userIds);
+      const avatarPromises = userIds.map(async (userId) => {
+        try {
+          console.log(`🔍 Fetching user ${userId}...`);
+          const response = await fetch(`${API_BASE_URL}/users/${userId}`, {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          });
+          console.log(`🔍 Response status for ${userId}:`, response.status);
+          if (response.ok) {
+            const userData = await response.json();
+            console.log(`🔍 User data for ${userId}:`, userData);
+            return { userId, avatar: userData.avatar };
+          } else {
+            console.log(`❌ Response not ok for ${userId}:`, response.status);
+          }
+        } catch (error) {
+          console.log(`❌ Error fetching avatar for user ${userId}:`, error);
+        }
+        return { userId, avatar: null };
+      });
+
+      const avatarResults = await Promise.all(avatarPromises);
+      console.log("🔍 Avatar results:", avatarResults);
+      const avatarMap = {};
+      avatarResults.forEach(({ userId, avatar }) => {
+        if (avatar) avatarMap[userId] = avatar;
+      });
+
+      setUserAvatars((prev) => ({ ...prev, ...avatarMap }));
+      console.log("✅ CoachChat user avatars loaded:", avatarMap);
+    } catch (error) {
+      console.log("❌ Error fetching user avatars:", error);
+    }
+  };
 
   const sendMessage = () => {
     if (!input.trim() || !socketRef.current || !sessionId) return;
@@ -112,7 +170,9 @@ const CoachChat = () => {
     <View style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.headerTitle}>
-          {session?.coach_id?.full_name ? session.coach_id.full_name : "Chat với Coach"}
+          {session?.coach_id?.full_name
+            ? session.coach_id.full_name
+            : "Chat với Coach"}
         </Text>
         {!setupError && (
           <TouchableOpacity
@@ -192,6 +252,20 @@ const CoachChat = () => {
 
               const avatar = getAvatarText(senderName);
 
+              // Get avatar for this specific user by ID
+              let userAvatar = userAvatars[senderId];
+              if (!userAvatar && isOwn && user?.avatar) {
+                userAvatar = user.avatar; // Use current user avatar for own messages
+              }
+              console.log(
+                "🔍 CoachChat user avatar for ID",
+                senderId,
+                ":",
+                userAvatar,
+                "isOwn:",
+                isOwn
+              );
+
               return (
                 <View
                   key={idx}
@@ -202,7 +276,21 @@ const CoachChat = () => {
                 >
                   {!isOwn && (
                     <View style={styles.avatar}>
-                      <Text style={styles.avatarText}>{avatar}</Text>
+                      {userAvatar ? (
+                        <Image
+                          source={{ uri: userAvatar }}
+                          style={styles.avatarImage}
+                          onError={(error) => {
+                            console.log(
+                              "❌ CoachChat avatar loading error:",
+                              error.nativeEvent
+                            );
+                          }}
+                          defaultSource={require("../../assets/icon.png")}
+                        />
+                      ) : (
+                        <Text style={styles.avatarText}>{avatar}</Text>
+                      )}
                     </View>
                   )}
 
@@ -232,7 +320,21 @@ const CoachChat = () => {
 
                   {isOwn && (
                     <View style={styles.avatar}>
-                      <Text style={styles.avatarText}>{avatar}</Text>
+                      {userAvatar ? (
+                        <Image
+                          source={{ uri: userAvatar }}
+                          style={styles.avatarImage}
+                          onError={(error) => {
+                            console.log(
+                              "❌ CoachChat avatar loading error:",
+                              error.nativeEvent
+                            );
+                          }}
+                          defaultSource={require("../../assets/icon.png")}
+                        />
+                      ) : (
+                        <Text style={styles.avatarText}>{avatar}</Text>
+                      )}
                     </View>
                   )}
                 </View>
@@ -313,6 +415,12 @@ const styles = StyleSheet.create({
     backgroundColor: "#4ECB71",
     alignItems: "center",
     justifyContent: "center",
+    marginHorizontal: 6,
+  },
+  avatarImage: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     marginHorizontal: 6,
   },
   avatarText: {

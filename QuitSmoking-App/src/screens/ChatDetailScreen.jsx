@@ -9,12 +9,13 @@ import {
   SafeAreaView,
   KeyboardAvoidingView,
   Platform,
+  Image,
 } from "react-native";
 import Icon from "react-native-vector-icons/Feather";
 import { io } from "socket.io-client";
 import { getMessages } from "../api/chat";
 import { useAuth } from "../contexts/AuthContext";
-import { LOCAL_IP_ADDRESS, SOCKET_URL } from "../config/config";
+import { LOCAL_IP_ADDRESS, SOCKET_URL, API_BASE_URL } from "../config/config";
 const getAvatarText = (name = "") => {
   const words = name.trim().split(" ");
   if (words.length === 0) return "?";
@@ -27,17 +28,17 @@ export default function ChatDetailScreen({ route, navigation }) {
   const currentUserId = user?._id;
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
+  const [userAvatars, setUserAvatars] = useState({}); // Store user avatars
   const socketRef = useRef(null);
   const scrollViewRef = useRef(null);
 
   useEffect(() => {
-    console.log("SESSION><><><><<><><>>", session)
+    console.log("SESSION><><><><<><><>>", session);
     fetchMessages();
     socketRef.current = io(`${SOCKET_URL}/coach`, {
       auth: { token },
       transports: ["websocket"], // ép dùng websocket, tránh polling
     });
-    
 
     socketRef.current.on("connect", () => {
       socketRef.current.emit("joinSession", session._id);
@@ -46,22 +47,73 @@ export default function ChatDetailScreen({ route, navigation }) {
     socketRef.current.on("newMessage", (msg) => {
       if (msg.session_id === session._id) {
         setMessages((prev) => [...prev, msg]);
+        // Fetch avatar for new message sender
+        const senderId = msg.user_id?._id || msg.user_id;
+        if (senderId && !userAvatars[senderId]) {
+          fetchUserAvatars([senderId]);
+        }
       }
     });
     socketRef.current.on("connect_error", (err) => {
       console.error("🚫 Socket connect error:", err.message);
     });
-    
+
     socketRef.current.on("connect", () => {
       console.log("✅ Socket connected to coach namespace");
     });
     return () => socketRef.current.disconnect();
   }, []);
 
+  const fetchUserAvatars = async (userIds) => {
+    try {
+      const avatarPromises = userIds.map(async (userId) => {
+        try {
+          const response = await fetch(`${API_BASE_URL}/users/${userId}`, {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          });
+          if (response.ok) {
+            const userData = await response.json();
+            return { userId, avatar: userData.avatar };
+          }
+        } catch (error) {
+          console.log(`❌ Error fetching avatar for user ${userId}:`, error);
+        }
+        return { userId, avatar: null };
+      });
+
+      const avatarResults = await Promise.all(avatarPromises);
+      const avatarMap = {};
+      avatarResults.forEach(({ userId, avatar }) => {
+        if (avatar) avatarMap[userId] = avatar;
+      });
+
+      setUserAvatars((prev) => ({ ...prev, ...avatarMap }));
+      console.log("✅ ChatDetail user avatars loaded:", avatarMap);
+    } catch (error) {
+      console.log("❌ Error fetching user avatars:", error);
+    }
+  };
+
   const fetchMessages = async () => {
     try {
       const res = await getMessages(token, session._id);
-      setMessages(res?.data || []);
+      const messagesData = res?.data || [];
+      setMessages(messagesData);
+
+      // Extract unique user IDs and fetch their avatars
+      const userIds = [
+        ...new Set(
+          messagesData
+            .map((msg) => {
+              const senderId = msg.user_id?._id || msg.user_id;
+              return senderId;
+            })
+            .filter(Boolean)
+        ),
+      ];
+      fetchUserAvatars(userIds);
     } catch (err) {
       console.error("Không thể tải tin nhắn", err);
     }
@@ -72,24 +124,22 @@ export default function ChatDetailScreen({ route, navigation }) {
       console.log("🚫 Không có nội dung tin nhắn");
       return;
     }
-  
+
     const payload = {
       sessionId: session._id,
       content: input,
     };
-  
+
     console.log("📤 Đang gửi message:", payload);
-  
+
     if (!socketRef.current || !socketRef.current.connected) {
       console.log("❌ Socket chưa kết nối");
       return;
     }
-  
+
     socketRef.current.emit("sendMessage", payload);
     setInput("");
   };
-  
-  
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: "#f5f5f5" }}>
@@ -100,11 +150,37 @@ export default function ChatDetailScreen({ route, navigation }) {
         {/* Header */}
         <View style={styles.header}>
           <View style={styles.headerContent}>
-            <View style={styles.headerAvatar}>
-              <Text style={styles.headerAvatarText}>
-                {getAvatarText(session.user_id.full_name)}
-              </Text>
-            </View>
+            {(() => {
+              // Get avatar for session user by ID
+              const userId = session.user_id?._id;
+              const userAvatar = userAvatars[userId];
+              console.log(
+                "🔍 ChatDetail header avatar for ID",
+                userId,
+                ":",
+                userAvatar
+              );
+
+              return userAvatar ? (
+                <Image
+                  source={{ uri: userAvatar }}
+                  style={styles.headerAvatarImage}
+                  onError={(error) => {
+                    console.log(
+                      "❌ ChatDetail header avatar loading error:",
+                      error.nativeEvent
+                    );
+                  }}
+                  defaultSource={require("../../assets/icon.png")}
+                />
+              ) : (
+                <View style={styles.headerAvatar}>
+                  <Text style={styles.headerAvatarText}>
+                    {getAvatarText(session.user_id.full_name)}
+                  </Text>
+                </View>
+              );
+            })()}
             <View style={{ flexDirection: "row", alignItems: "center" }}>
               <Text style={styles.headerTitle}>
                 {session.user_id?.full_name || user.full_name || "Coach"}
@@ -166,6 +242,16 @@ export default function ChatDetailScreen({ route, navigation }) {
 
             const avatar = getAvatarText(senderName);
 
+            // Get avatar for this specific user by ID
+            const senderId = msg.user_id?._id || msg.user_id;
+            const userAvatar = userAvatars[senderId];
+            console.log(
+              "🔍 ChatDetail user avatar for ID",
+              senderId,
+              ":",
+              userAvatar
+            );
+
             return (
               <View
                 key={idx}
@@ -177,7 +263,21 @@ export default function ChatDetailScreen({ route, navigation }) {
                 {/* Avatar trái */}
                 {!isMe && (
                   <View style={styles.avatar}>
-                    <Text style={styles.avatarText}>{avatar}</Text>
+                    {userAvatar ? (
+                      <Image
+                        source={{ uri: userAvatar }}
+                        style={styles.avatarImage}
+                        onError={(error) => {
+                          console.log(
+                            "❌ ChatDetail avatar loading error:",
+                            error.nativeEvent
+                          );
+                        }}
+                        defaultSource={require("../../assets/icon.png")}
+                      />
+                    ) : (
+                      <Text style={styles.avatarText}>{avatar}</Text>
+                    )}
                   </View>
                 )}
 
@@ -207,7 +307,21 @@ export default function ChatDetailScreen({ route, navigation }) {
                 {/* Avatar phải */}
                 {isMe && (
                   <View style={styles.avatar}>
-                    <Text style={styles.avatarText}>{avatar}</Text>
+                    {userAvatar ? (
+                      <Image
+                        source={{ uri: userAvatar }}
+                        style={styles.avatarImage}
+                        onError={(error) => {
+                          console.log(
+                            "❌ ChatDetail avatar loading error:",
+                            error.nativeEvent
+                          );
+                        }}
+                        defaultSource={require("../../assets/icon.png")}
+                      />
+                    ) : (
+                      <Text style={styles.avatarText}>{avatar}</Text>
+                    )}
                   </View>
                 )}
               </View>
@@ -260,6 +374,14 @@ const styles = StyleSheet.create({
     backgroundColor: "#4ECB71",
     alignItems: "center",
     justifyContent: "center",
+    marginRight: 12,
+    borderWidth: 2,
+    borderColor: "#fff",
+  },
+  headerAvatarImage: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     marginRight: 12,
     borderWidth: 2,
     borderColor: "#fff",
@@ -319,6 +441,14 @@ const styles = StyleSheet.create({
     backgroundColor: "#4ECB71",
     alignItems: "center",
     justifyContent: "center",
+    marginHorizontal: 6,
+    borderWidth: 1.5,
+    borderColor: "#fff",
+  },
+  avatarImage: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     marginHorizontal: 6,
     borderWidth: 1.5,
     borderColor: "#fff",

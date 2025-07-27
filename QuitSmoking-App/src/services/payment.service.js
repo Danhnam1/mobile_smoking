@@ -42,7 +42,7 @@ export const PaymentService = {
     // Hardcoding the endpoint to ensure the correct one is called.
     // The backend's auth middleware will handle getting the user by their token.
     return BaseService.get({
-      url: '/transactions/me',
+      url: "/transactions/me",
       isAuth: true, // Requires authentication
     });
   },
@@ -58,4 +58,39 @@ export const PaymentService = {
       isAuth: true, // Requires authentication
     });
   },
-}; 
+
+  /**
+   * Preview upgrade cost for a new package.
+   * @param {{ newPackageId: string }} payload - The new package ID to upgrade to.
+   * @returns {Promise<any>}
+   */
+  previewUpgrade: (payload) => {
+    return BaseService.post({
+      url: "/user-membership/preview-upgrade",
+      payload,
+      isAuth: true, // Requires authentication
+    });
+  },
+
+  /**
+   * Get current user membership.
+   * @returns {Promise<any>}
+   */
+  getCurrentMembership: () => {
+    return BaseService.get({
+      url: "/user-membership/me",
+      isAuth: true, // Requires authentication
+    });
+  },
+
+  /**
+   * Get user membership history.
+   * @returns {Promise<any>}
+   */
+  getMembershipHistory: () => {
+    return BaseService.get({
+      url: "/user-membership/me/history",
+      isAuth: true, // Requires authentication
+    });
+  },
+};

@@ -222,7 +222,7 @@ const ProfileScreen = ({ navigation }) => {
               )
             )}
 
-            {membershipStatus?.status !== "active" && (
+            {membershipStatus?.status !== "active" ? (
               <TouchableOpacity
                 style={styles.membershipButton}
                 onPress={() => navigation.navigate("MembershipPackage")}
@@ -235,6 +235,19 @@ const ProfileScreen = ({ navigation }) => {
                   <Text style={styles.membershipButtonText}>
                     Xem/Nâng cấp gói
                   </Text>
+                </LinearGradient>
+              </TouchableOpacity>
+            ) : (
+              <TouchableOpacity
+                style={styles.upgradeButton}
+                onPress={() => navigation.navigate("MembershipPackage")}
+                activeOpacity={0.85}
+              >
+                <LinearGradient
+                  colors={["#558157", "#558157"]}
+                  style={styles.upgradeButtonGradient}
+                >
+                  <Text style={styles.upgradeButtonText}> Nâng cấp gói</Text>
                 </LinearGradient>
               </TouchableOpacity>
             )}
@@ -389,6 +402,26 @@ const styles = StyleSheet.create({
     width: "100%",
   },
   membershipButtonText: {
+    color: "#FFFFFF",
+    fontSize: 18,
+    fontWeight: "800",
+    letterSpacing: 0.5,
+  },
+  upgradeButton: {
+    borderRadius: 18,
+    marginTop: 18,
+    overflow: "hidden",
+    width: "100%",
+    alignSelf: "center",
+    elevation: 3,
+  },
+  upgradeButtonGradient: {
+    paddingVertical: 16,
+    alignItems: "center",
+    borderRadius: 18,
+    width: "100%",
+  },
+  upgradeButtonText: {
     color: "#FFFFFF",
     fontSize: 18,
     fontWeight: "800",

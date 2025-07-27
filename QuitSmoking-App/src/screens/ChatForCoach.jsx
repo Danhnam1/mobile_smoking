@@ -17,7 +17,7 @@ import {
   getSessionByCoach,
 } from "../api/chat";
 import { useAuth } from "../contexts/AuthContext";
-import { LOCAL_IP_ADDRESS } from "../config/config";
+import { LOCAL_IP_ADDRESS, API_BASE_URL } from "../config/config";
 import { useNavigation, useRoute } from "@react-navigation/native";
 export default function ChatForCoach() {
   const { token, user } = useAuth();
@@ -26,6 +26,7 @@ export default function ChatForCoach() {
   const [selectedChat, setSelectedChat] = useState(null);
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
+  const [userAvatars, setUserAvatars] = useState({}); // Store user avatars
   const socketRef = useRef(null);
   const navigation = useNavigation();
   const route = useRoute();
@@ -45,6 +46,11 @@ export default function ChatForCoach() {
     socketRef.current.on("newMessage", (msg) => {
       if (selectedChat && msg.session_id === selectedChat._id) {
         setMessages((prev) => [...prev, msg]);
+        // Fetch avatar for new message sender
+        const senderId = msg.user_id?._id || msg.user_id;
+        if (senderId && !userAvatars[senderId]) {
+          fetchUserAvatars([senderId]);
+        }
       }
     });
     socketRef.current.on("connect_error", (err) => {
@@ -83,12 +89,59 @@ export default function ChatForCoach() {
     }
   };
 
+  const fetchUserAvatars = async (userIds) => {
+    try {
+      const avatarPromises = userIds.map(async (userId) => {
+        try {
+          const response = await fetch(`${API_BASE_URL}/users/${userId}`, {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          });
+          if (response.ok) {
+            const userData = await response.json();
+            return { userId, avatar: userData.avatar };
+          }
+        } catch (error) {
+          console.log(`❌ Error fetching avatar for user ${userId}:`, error);
+        }
+        return { userId, avatar: null };
+      });
+
+      const avatarResults = await Promise.all(avatarPromises);
+      const avatarMap = {};
+      avatarResults.forEach(({ userId, avatar }) => {
+        if (avatar) avatarMap[userId] = avatar;
+      });
+
+      setUserAvatars((prev) => ({ ...prev, ...avatarMap }));
+      console.log("✅ ChatForCoach user avatars loaded:", avatarMap);
+    } catch (error) {
+      console.log("❌ Error fetching user avatars:", error);
+    }
+  };
+
   const selectChat = async (session) => {
     setSelectedChat(session);
     try {
       const res = await getMessages(token, session._id);
       console.log("🟢 getMessages:", res.data);
-      setMessages(res?.data || []); // ✅ Chỉ cần res.data
+      const messagesData = res?.data || [];
+      setMessages(messagesData);
+
+      // Extract unique user IDs and fetch their avatars
+      const userIds = [
+        ...new Set(
+          messagesData
+            .map((msg) => {
+              const senderId = msg.user_id?._id || msg.user_id;
+              return senderId;
+            })
+            .filter(Boolean)
+        ),
+      ];
+      fetchUserAvatars(userIds);
+
       socketRef.current.emit("joinSession", session._id);
     } catch (err) {
       console.error("Không thể tải tin nhắn", err);
@@ -101,7 +154,7 @@ export default function ChatForCoach() {
       session_id: selectedChat._id,
       content: input,
     });
-    
+
     socketRef.current.emit("sendMessage", {
       session_id: selectedChat._id,
       content: input,
@@ -119,6 +172,7 @@ export default function ChatForCoach() {
           keyExtractor={(item) => item._id}
           renderItem={({ item }) => {
             console.log("Sidebar user_id:", item.user_id);
+            console.log("🔍 Avatar URL:", item.user_id?.avatar);
             return (
               <TouchableOpacity
                 style={[
@@ -129,11 +183,17 @@ export default function ChatForCoach() {
               >
                 <Image
                   source={{
-                    uri: `https://api.dicebear.com/7.x/miniavs/svg?seed=${
-                      item.user_id?.full_name || "unknown"
-                    }`,
+                    uri:
+                      item.user_id?.avatar ||
+                      `https://api.dicebear.com/7.x/miniavs/svg?seed=${
+                        item.user_id?.full_name || "unknown"
+                      }`,
                   }}
                   style={styles.avatar}
+                  onError={(error) => {
+                    console.log("❌ Avatar loading error:", error.nativeEvent);
+                  }}
+                  defaultSource={require("../../assets/icon.png")}
                 />
                 <View style={{ flex: 1 }}>
                   <Text style={styles.chatName}>
@@ -160,13 +220,23 @@ export default function ChatForCoach() {
                 <View style={styles.headerLeft}>
                   <Image
                     source={{
-                      uri: `https://api.dicebear.com/7.x/miniavs/svg?seed=${
-                        selectedChat.coach_id?.full_name ||
-                        selectedChat.user_id?.full_name ||
-                        "unknown"
-                      }`,
+                      uri:
+                        selectedChat.coach_id?.avatar ||
+                        selectedChat.user_id?.avatar ||
+                        `https://api.dicebear.com/7.x/miniavs/svg?seed=${
+                          selectedChat.coach_id?.full_name ||
+                          selectedChat.user_id?.full_name ||
+                          "unknown"
+                        }`,
                     }}
                     style={styles.avatarLarge}
+                    onError={(error) => {
+                      console.log(
+                        "❌ Header avatar loading error:",
+                        error.nativeEvent
+                      );
+                    }}
+                    defaultSource={require("../../assets/icon.png")}
                   />
                   <View>
                     <Text style={styles.chatUserName}>
@@ -200,6 +270,17 @@ export default function ChatForCoach() {
                 {messages.map((msg) => {
                   const isMe =
                     msg.user_id === user._id || msg.user_id?._id === user._id;
+
+                  // Get avatar for this specific user by ID
+                  const senderId = msg.user_id?._id || msg.user_id;
+                  const userAvatar = userAvatars[senderId];
+                  console.log(
+                    "🔍 ChatForCoach user avatar for ID",
+                    senderId,
+                    ":",
+                    userAvatar
+                  );
+
                   return (
                     <View
                       key={msg._id}
@@ -209,12 +290,63 @@ export default function ChatForCoach() {
                       ]}
                     >
                       <View
-                        style={[
-                          styles.messageBubble,
-                          isMe ? styles.bubbleMe : styles.bubbleOther,
-                        ]}
+                        style={{
+                          flexDirection: "row",
+                          alignItems: "flex-start",
+                        }}
                       >
-                        <Text style={styles.messageText}>{msg.content}</Text>
+                        {!isMe && (
+                          <View style={styles.avatar}>
+                            {userAvatar ? (
+                              <Image
+                                source={{ uri: userAvatar }}
+                                style={styles.avatarImage}
+                                onError={(error) => {
+                                  console.log(
+                                    "❌ ChatForCoach avatar loading error:",
+                                    error.nativeEvent
+                                  );
+                                }}
+                                defaultSource={require("../../assets/icon.png")}
+                              />
+                            ) : (
+                              <Text style={styles.avatarText}>
+                                {msg.user_id?.full_name?.charAt(0) || "?"}
+                              </Text>
+                            )}
+                          </View>
+                        )}
+
+                        <View
+                          style={[
+                            styles.messageBubble,
+                            isMe ? styles.bubbleMe : styles.bubbleOther,
+                          ]}
+                        >
+                          <Text style={styles.messageText}>{msg.content}</Text>
+                        </View>
+
+                        {isMe && (
+                          <View style={styles.avatar}>
+                            {userAvatar ? (
+                              <Image
+                                source={{ uri: userAvatar }}
+                                style={styles.avatarImage}
+                                onError={(error) => {
+                                  console.log(
+                                    "❌ ChatForCoach avatar loading error:",
+                                    error.nativeEvent
+                                  );
+                                }}
+                                defaultSource={require("../../assets/icon.png")}
+                              />
+                            ) : (
+                              <Text style={styles.avatarText}>
+                                {msg.user_id?.full_name?.charAt(0) || "?"}
+                              </Text>
+                            )}
+                          </View>
+                        )}
                       </View>
                       <Text style={styles.messageTime}>
                         {new Date(msg.sent_at).toLocaleTimeString([], {
