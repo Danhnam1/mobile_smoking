@@ -24,7 +24,7 @@ import { API_BASE_URL } from "../config/config";
 import { useFocusEffect } from "@react-navigation/native";
 
 const QuitPlanScreen = ({ navigation, route }) => {
-  const { user, token, membershipStatus } = useAuth();
+  const { user, token, membershipStatus, syncMembershipStatus } = useAuth();
   const [goal, setGoal] = useState(route.params?.goal || "");
   const [startDate, setStartDate] = useState("");
   const [note, setNote] = useState("");
@@ -89,9 +89,31 @@ const QuitPlanScreen = ({ navigation, route }) => {
 
   useFocusEffect(
     React.useCallback(() => {
-      // Có thể để trống, chỉ cần để dependency là [membershipStatus]
-      // hoặc gọi lại các hàm fetch nếu cần
-    }, [membershipStatus])
+      console.log(
+        "🔄 QuitPlanScreen focused - Current membership status:",
+        membershipStatus
+      );
+      console.log("🔄 Package type:", membershipStatus?.package_id?.type);
+      console.log(
+        "🔄 Is Pro member:",
+        membershipStatus?.package_id?.type === "pro" ||
+          membershipStatus?.package_id?.type === "PRO"
+      );
+
+      // Force refresh membership status when screen is focused
+      // This ensures we have the latest membership data after payment
+      const refreshMembership = async () => {
+        try {
+          console.log("🔄 Syncing membership status...");
+          await syncMembershipStatus();
+          console.log("✅ Membership status synced successfully");
+        } catch (error) {
+          console.error("❌ Error syncing membership status:", error);
+        }
+      };
+
+      refreshMembership();
+    }, [membershipStatus, syncMembershipStatus])
   );
 
   // Debug membership status

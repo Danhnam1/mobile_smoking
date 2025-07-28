@@ -123,7 +123,8 @@ export const usePayment = (navigation) => {
             await clearPaymentOrder();
             // Refresh current membership
             await fetchCurrentMembership();
-            navigation.navigate("Main", { screen: "HomeTab" });
+            // Navigate to QuitPlanScreen to show coach selection immediately
+            navigation.navigate("QuitPlanScreen");
           },
         },
       ]
