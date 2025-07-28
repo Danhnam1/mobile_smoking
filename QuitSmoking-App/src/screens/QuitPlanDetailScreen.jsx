@@ -51,6 +51,38 @@ const QuitPlanDetailScreen = ({ route, navigation }) => {
 
   if (!plan) return <Text style={{ margin: 20 }}>Plan not found</Text>;
 
+  const formatDate = (dateString) => {
+    if (!dateString) return "N/A";
+    const date = new Date(dateString);
+    return date.toLocaleDateString("vi-VN");
+  };
+
+  const getStatusColor = (status) => {
+    switch (status) {
+      case "ongoing":
+        return "#4CAF50";
+      case "completed":
+        return "#2196F3";
+      case "cancelled":
+        return "#F44336";
+      default:
+        return "#666";
+    }
+  };
+
+  const getStatusText = (status) => {
+    switch (status) {
+      case "ongoing":
+        return "Đang thực hiện";
+      case "completed":
+        return "Hoàn thành";
+      case "cancelled":
+        return "Đã hủy";
+      default:
+        return status;
+    }
+  };
+
   return (
     <ImageBackground source={bgImage} style={styles.bg} resizeMode="cover">
       <ScrollView contentContainerStyle={styles.centerContent}>
@@ -63,57 +95,55 @@ const QuitPlanDetailScreen = ({ route, navigation }) => {
             />
           </View>
           <Text style={styles.title}>Your Quit Plan</Text>
+
           <View style={styles.row}>
             <Text style={styles.label}>Goal:</Text>
             <Text style={styles.value}>{plan.goal}</Text>
           </View>
+
           <View style={styles.row}>
             <Text style={styles.label}>Start Date:</Text>
-            <Text style={styles.value}>{plan.start_date?.slice(0, 10)}</Text>
+            <Text style={styles.value}>{formatDate(plan.start_date)}</Text>
           </View>
-          {plan.end_date && (
-            <View style={styles.row}>
-              <Text style={styles.label}>End Date:</Text>
-              <Text style={styles.value}>{plan.end_date?.slice(0, 10)}</Text>
-            </View>
-          )}
-          {plan.note ? (
+
+          {plan.note && (
             <View style={styles.row}>
               <Text style={styles.label}>Note:</Text>
               <Text style={styles.value}>{plan.note}</Text>
             </View>
-          ) : null}
+          )}
+
           {plan.reasons && plan.reasons.length > 0 && (
             <View style={styles.row}>
               <Text style={styles.label}>Reasons:</Text>
               <View style={{ flex: 1 }}>
-                {plan.reasons.map((r, i) => (
+                {plan.reasons.map((reason, i) => (
                   <Text key={i} style={styles.reasonItem}>
-                    • {r}
+                    • {reason}
                   </Text>
                 ))}
               </View>
             </View>
           )}
-          {plan.reasons_detail ? (
+
+          {plan.reasons_detail && (
             <View style={styles.row}>
               <Text style={styles.label}>Detailed Reasons:</Text>
               <Text style={styles.value}>{plan.reasons_detail}</Text>
             </View>
-          ) : null}
+          )}
+
           {plan.status && (
             <View style={styles.row}>
               <Text style={styles.label}>Status:</Text>
               <Text
-                style={[
-                  styles.value,
-                  { color: plan.status === "ongoing" ? "#388e3c" : "#888" },
-                ]}
+                style={[styles.value, { color: getStatusColor(plan.status) }]}
               >
-                {plan.status}
+                {getStatusText(plan.status)}
               </Text>
             </View>
           )}
+
           {coach && (
             <View style={styles.row}>
               <Text style={styles.label}>Coach:</Text>
@@ -123,6 +153,7 @@ const QuitPlanDetailScreen = ({ route, navigation }) => {
               </View>
             </View>
           )}
+
           <TouchableOpacity
             style={styles.button}
             onPress={() =>
@@ -131,6 +162,7 @@ const QuitPlanDetailScreen = ({ route, navigation }) => {
           >
             <Text style={styles.buttonText}>View Progress</Text>
           </TouchableOpacity>
+
           <TouchableOpacity
             style={styles.homeButton}
             onPress={() => navigation.navigate("Main")}
@@ -231,7 +263,6 @@ const styles = StyleSheet.create({
   },
   homeButton: {
     marginTop: 12,
-
     alignSelf: "center",
   },
   homeButtonText: {

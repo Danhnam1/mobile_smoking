@@ -128,7 +128,7 @@ const UserDetailScreen = ({ navigation, route }) => {
             if (route.params?.fromProfileEdit) {
               navigation.goBack();
             } else {
-              navigation.navigate("SmokingStatus");
+              navigation.navigate("GoalScreen");
             }
           },
         },

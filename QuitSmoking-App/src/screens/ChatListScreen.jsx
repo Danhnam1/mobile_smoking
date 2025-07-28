@@ -144,7 +144,7 @@ export default function ChatListScreen({ navigation }) {
               )}
               <View>
                 <Text style={styles.name}>
-                  {item.user_id?.full_name || "Không rõ"}
+                  {(item.user_id && item.user_id.full_name) || "Không rõ"}
                 </Text>
                 <Text style={styles.email}>{item.user_id?.email || ""}</Text>
               </View>

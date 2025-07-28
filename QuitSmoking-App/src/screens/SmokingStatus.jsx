@@ -14,6 +14,7 @@ import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { createSmokingStatusInitial } from "../api/user";
 import { useAuth } from "../contexts/AuthContext";
 import { LinearGradient } from "expo-linear-gradient";
+import { getLatestPrePlanStatus } from "../api/quitPlan";
 
 const SmokingStatus = ({ navigation, route }) => {
   const [cigaretteCount, setCigaretteCount] = useState("");
@@ -24,11 +25,30 @@ const SmokingStatus = ({ navigation, route }) => {
   const [monthlyExpenses, setMonthlyExpenses] = useState("0");
   const [annualCosts, setAnnualCosts] = useState("0");
   const [cigarettesPerYear, setCigarettesPerYear] = useState("0");
+  const [goal, setGoal] = useState(route.params?.goal || "");
+  const [existingData, setExistingData] = useState(null);
 
   const { user, token, updateUserProfile } = useAuth();
 
   // Add console.log to inspect user and token when component mounts or re-renders
   React.useEffect(() => {}, [user, token]);
+
+  // Load existing data when component mounts
+  React.useEffect(() => {
+    if (user && token) {
+      loadExistingData();
+    }
+  }, [user, token]);
+
+  // Update goal when route params change
+  React.useEffect(() => {
+    console.log("SmokingStatus - Route params:", route.params);
+    console.log("SmokingStatus - Goal from route params:", route.params?.goal);
+    if (route.params?.goal) {
+      console.log("SmokingStatus - Setting goal to:", route.params.goal);
+      setGoal(route.params.goal);
+    }
+  }, [route.params?.goal]);
 
   // Add auto-calculate suctionFrequency
   React.useEffect(() => {
@@ -63,6 +83,23 @@ const SmokingStatus = ({ navigation, route }) => {
     );
   }, [cigaretteCount, pricePerPack, packsPerWeek]);
 
+  const loadExistingData = async () => {
+    try {
+      const data = await getLatestPrePlanStatus(token);
+      if (data) {
+        setExistingData(data);
+        setCigaretteCount(data.cigarette_count?.toString() || "");
+        setPricePerPack(data.price_per_pack?.toString() || "");
+        setPacksPerWeek(data.packs_per_week?.toString() || "");
+        setSuctionFrequency(data.suction_frequency || "medium");
+        setHealthNote(data.health_note || "");
+        // Note: goal is not loaded from smoking status, only from route params
+      }
+    } catch (error) {
+      console.log("No existing smoking status found");
+    }
+  };
+
   const handleSubmit = async () => {
     if (!user || !token) {
       Alert.alert(
@@ -78,6 +115,7 @@ const SmokingStatus = ({ navigation, route }) => {
     const moneySaved = moneySavedPerDay * 30; // Calculate for 30 days
 
     try {
+      // Save smoking status (without goal - goal will be saved in quit plan)
       await createSmokingStatusInitial(
         {
           user_id: userId,
@@ -89,6 +127,7 @@ const SmokingStatus = ({ navigation, route }) => {
           health_note: healthNote,
           price_per_pack: Number(pricePerPack),
           packs_per_week: Number(packsPerWeek),
+          // Note: goal is not saved in smoking status, it will be saved in quit plan
         },
         token
       );
@@ -104,14 +143,29 @@ const SmokingStatus = ({ navigation, route }) => {
           pricePerPack: Number(pricePerPack),
           packsPerWeek: Number(packsPerWeek),
           healthNote,
+          // Note: goal is not saved in user profile, it will be saved in quit plan
           lastUpdated: new Date().toISOString(),
         },
         // We will set isProfileComplete to true in ProgressSummary to ensure the flow
         // isProfileComplete: true
       });
 
-      // Navigate to ProgressSummary, passing the calculated values
-      navigation.navigate("ProgressSummary", { cigarettesAvoided, moneySaved });
+      // Check if this is part of quit plan flow
+      if (route.params?.fromQuitPlan) {
+        // Navigate to QuitPlanScreen with goal
+        console.log(
+          "SmokingStatus - Navigating to QuitPlanScreen with goal:",
+          route.params.goal
+        );
+        console.log("SmokingStatus - Current goal state:", goal);
+        navigation.navigate("QuitPlanScreen", { goal: route.params.goal });
+      } else {
+        // Navigate to ProgressSummary, passing the calculated values
+        navigation.navigate("ProgressSummary", {
+          cigarettesAvoided,
+          moneySaved,
+        });
+      }
     } catch (error) {
       Alert.alert("Lỗi", error.message || "Tạo trạng thái hút thuốc thất bại!");
     }
@@ -119,7 +173,13 @@ const SmokingStatus = ({ navigation, route }) => {
 
   // Add isFormValid and disable button if not valid
   const isFormValid = () => {
-    return cigaretteCount && suctionFrequency && pricePerPack && packsPerWeek;
+    return (
+      cigaretteCount &&
+      suctionFrequency &&
+      pricePerPack &&
+      packsPerWeek &&
+      goal.trim()
+    );
   };
 
   return (
@@ -134,13 +194,27 @@ const SmokingStatus = ({ navigation, route }) => {
             <Text style={styles.setupTitle}>Thiết lập hồ sơ</Text>
           </View>
           <View style={styles.titleUnderline} />
-          <Text style={styles.stepText}>Bước 1/2</Text>
+          <Text style={styles.stepText}>Bước 2/3</Text>
           <View style={styles.progressBarBg}>
             <View style={styles.progressBarFill} />
           </View>
         </View>
         <View style={styles.container}>
           <Text style={styles.header}>🚬 Thông tin hút thuốc</Text>
+
+          <View style={styles.formGroup}>
+            <Text style={styles.label}>Mục tiêu của bạn *</Text>
+            <View style={styles.inputWrapper}>
+              <TextInput
+                style={styles.input}
+                placeholder="VD: Bỏ thuốc hoàn toàn, Giảm dần..."
+                value={goal}
+                onChangeText={setGoal}
+                placeholderTextColor="#B0B3B8"
+              />
+            </View>
+          </View>
+
           <View style={styles.formGroup}>
             <Text style={styles.label}>Số điếu thuốc hút mỗi ngày *</Text>
             <View style={styles.inputWrapper}>
@@ -306,7 +380,7 @@ const styles = StyleSheet.create({
     overflow: "hidden",
   },
   progressBarFill: {
-    width: "50%",
+    width: "66%",
     height: 8,
     backgroundColor: "#43e97b",
     borderRadius: 8,

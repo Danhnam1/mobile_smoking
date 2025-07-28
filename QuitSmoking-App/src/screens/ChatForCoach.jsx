@@ -64,6 +64,13 @@ export default function ChatForCoach() {
     fetchChatSessions();
   }, []);
 
+  const getAvatarText = (user) => {
+    if (user && user.full_name && user.full_name.length > 0) {
+      return user.full_name.charAt(0);
+    }
+    return "?";
+  };
+
   const fetchChatSessions = async () => {
     try {
       const res = await getSessionByCoach(token);
@@ -197,7 +204,7 @@ export default function ChatForCoach() {
                 />
                 <View style={{ flex: 1 }}>
                   <Text style={styles.chatName}>
-                    {item.user_id?.full_name || "Không rõ"}
+                    {(item.user_id && item.user_id.full_name) || "Không rõ"}
                   </Text>
                   <Text style={styles.chatEmail}>
                     {item.user_id?.email || ""}
@@ -311,7 +318,7 @@ export default function ChatForCoach() {
                               />
                             ) : (
                               <Text style={styles.avatarText}>
-                                {msg.user_id?.full_name?.charAt(0) || "?"}
+                                {getAvatarText(msg.user_id)}
                               </Text>
                             )}
                           </View>
@@ -342,7 +349,7 @@ export default function ChatForCoach() {
                               />
                             ) : (
                               <Text style={styles.avatarText}>
-                                {msg.user_id?.full_name?.charAt(0) || "?"}
+                                {getAvatarText(msg.user_id)}
                               </Text>
                             )}
                           </View>

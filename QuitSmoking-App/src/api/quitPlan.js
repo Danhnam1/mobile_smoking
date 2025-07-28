@@ -1,52 +1,72 @@
-import { API_BASE_URL, ENDPOINTS } from '../config/config';
+import { API_BASE_URL, ENDPOINTS } from "../config/config";
 
 // Helper to safely parse JSON only if content-type is application/json
 const safeParseJSON = async (response) => {
-  const contentType = response.headers.get('content-type');
-  if (contentType && contentType.includes('application/json')) {
+  const contentType = response.headers.get("content-type");
+  if (contentType && contentType.includes("application/json")) {
     return await response.json();
   } else {
     const text = await response.text();
-    throw new Error('Server returned non-JSON response: ' + text);
+    throw new Error("Server returned non-JSON response: " + text);
   }
 };
 
 // Helper function to handle API errors
 const handleApiError = (error) => {
-  if (error.message === 'Network request failed') {
-    throw new Error('Không thể kết nối đến máy chủ. Vui lòng kiểm tra kết nối mạng của bạn.');
+  if (error.message === "Network request failed") {
+    throw new Error(
+      "Không thể kết nối đến máy chủ. Vui lòng kiểm tra kết nối mạng của bạn."
+    );
   }
   throw error;
 };
 
 export const createQuitPlan = async (planData, token) => {
   try {
+    console.log("API - createQuitPlan - planData:", planData);
+    console.log(
+      "API - createQuitPlan - planData JSON:",
+      JSON.stringify(planData)
+    );
+
     const response = await fetch(`${API_BASE_URL}/quit-plans`, {
-      method: 'POST',
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
       },
-      body: JSON.stringify(planData)
+      body: JSON.stringify(planData),
     });
 
+    console.log("API - createQuitPlan - response status:", response.status);
+    console.log("API - createQuitPlan - response ok:", response.ok);
+
     if (!response.ok) {
-      throw await safeParseJSON(response);
+      const errorData = await safeParseJSON(response);
+      console.log("API - createQuitPlan - error data:", errorData);
+      throw errorData;
     }
-    return await safeParseJSON(response);
+
+    const result = await safeParseJSON(response);
+    console.log("API - createQuitPlan - success result:", result);
+    return result;
   } catch (error) {
+    console.log("API - createQuitPlan - caught error:", error);
     throw error;
   }
 };
 
 export const getSuggestedStages = async (token) => {
   try {
-    const response = await fetch(`${API_BASE_URL}/quit-plans/stage-suggestion`, {
-      method: 'GET',
-      headers: {
-        'Authorization': `Bearer ${token}`
+    const response = await fetch(
+      `${API_BASE_URL}/quit-plans/stage-suggestion`,
+      {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
       }
-    });
+    );
 
     if (!response.ok) {
       throw await safeParseJSON(response);
@@ -60,10 +80,10 @@ export const getSuggestedStages = async (token) => {
 export const getUserQuitPlans = async (userId, token) => {
   try {
     const response = await fetch(`${API_BASE_URL}/quit-plans/user/${userId}`, {
-      method: 'GET',
+      method: "GET",
       headers: {
-        'Authorization': `Bearer ${token}`
-      }
+        Authorization: `Bearer ${token}`,
+      },
     });
 
     if (!response.ok) {
@@ -78,10 +98,10 @@ export const getUserQuitPlans = async (userId, token) => {
 export const getQuitPlanById = async (planId, token) => {
   try {
     const response = await fetch(`${API_BASE_URL}/quit-plans/${planId}`, {
-      method: 'GET',
+      method: "GET",
       headers: {
-        'Authorization': `Bearer ${token}`
-      }
+        Authorization: `Bearer ${token}`,
+      },
     });
 
     if (!response.ok) {
@@ -95,7 +115,9 @@ export const getQuitPlanById = async (planId, token) => {
 
 export const getQuitPlanStages = async (planId, token) => {
   const headers = { Authorization: `Bearer ${token}` };
-  const res = await fetch(`${API_BASE_URL}/quit-plans/${planId}/stages`, { headers });
+  const res = await fetch(`${API_BASE_URL}/quit-plans/${planId}/stages`, {
+    headers,
+  });
 
   if (!res.ok) {
     throw await safeParseJSON(res);
@@ -105,14 +127,17 @@ export const getQuitPlanStages = async (planId, token) => {
 
 export const updateQuitPlanStatus = async (planId, status, token) => {
   try {
-    const response = await fetch(`${API_BASE_URL}/quit-plans/${planId}`, {
-      method: 'PATCH',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-      },
-      body: JSON.stringify({ status })
-    });
+    const response = await fetch(
+      `${API_BASE_URL}/quit-plans/${planId}/status`,
+      {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ status }),
+      }
+    );
 
     if (!response.ok) {
       throw await safeParseJSON(response);
@@ -125,13 +150,15 @@ export const updateQuitPlanStatus = async (planId, status, token) => {
 
 export const getQuitPlanSummary = async (planId, token) => {
   try {
-    const response = await fetch(`${API_BASE_URL}/quit-plans/${planId}/summary`, {
-      method: 'GET',
-      headers: {
-        'Authorization': `Bearer ${token}`
+    const response = await fetch(
+      `${API_BASE_URL}/quit-plans/${planId}/summary`,
+      {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
       }
-    });
-    // console.log('getQuitPlanSummary API raw response:', response);
+    );
 
     if (!response.ok) {
       throw await safeParseJSON(response);
@@ -144,14 +171,17 @@ export const getQuitPlanSummary = async (planId, token) => {
 
 export const createQuitPlanStage = async (planId, stageData, token) => {
   try {
-    const response = await fetch(`${API_BASE_URL}/quit-plans/${planId}/stages`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-      },
-      body: JSON.stringify(stageData)
-    });
+    const response = await fetch(
+      `${API_BASE_URL}/quit-plans/${planId}/stages`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(stageData),
+      }
+    );
 
     if (!response.ok) {
       throw await safeParseJSON(response);
@@ -162,16 +192,24 @@ export const createQuitPlanStage = async (planId, stageData, token) => {
   }
 };
 
-export const updateQuitPlanStage = async (planId, stageId, stageData, token) => {
+export const updateQuitPlanStage = async (
+  planId,
+  stageId,
+  stageData,
+  token
+) => {
   try {
-    const response = await fetch(`${API_BASE_URL}/quit-plans/${planId}/stages/${stageId}`, {
-      method: 'PATCH',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-      },
-      body: JSON.stringify(stageData)
-    });
+    const response = await fetch(
+      `${API_BASE_URL}/quit-plans/${planId}/stages/${stageId}`,
+      {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(stageData),
+      }
+    );
 
     if (!response.ok) {
       throw await safeParseJSON(response);
@@ -184,12 +222,15 @@ export const updateQuitPlanStage = async (planId, stageId, stageData, token) => 
 
 export const deleteQuitPlanStage = async (planId, stageId, token) => {
   try {
-    const response = await fetch(`${API_BASE_URL}/quit-plans/${planId}/stages/${stageId}`, {
-      method: 'DELETE',
-      headers: {
-        'Authorization': `Bearer ${token}`
+    const response = await fetch(
+      `${API_BASE_URL}/quit-plans/${planId}/stages/${stageId}`,
+      {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
       }
-    });
+    );
 
     if (!response.ok) {
       throw await safeParseJSON(response);
@@ -200,16 +241,20 @@ export const deleteQuitPlanStage = async (planId, stageId, token) => {
   }
 };
 
+// Progress Tracking APIs
 export const recordProgress = async (planId, stageId, progressData, token) => {
   try {
-    const response = await fetch(`${API_BASE_URL}/quit-plans/${planId}/progress`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-      },
-      body: JSON.stringify(progressData)
-    });
+    const response = await fetch(
+      `${API_BASE_URL}/quit-plans/${planId}/stages/${stageId}/progress`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(progressData),
+      }
+    );
 
     if (!response.ok) {
       throw await safeParseJSON(response);
@@ -222,12 +267,15 @@ export const recordProgress = async (planId, stageId, progressData, token) => {
 
 export const getProgressByStage = async (planId, stageId, token) => {
   try {
-    const response = await fetch(`${API_BASE_URL}/quit-plans/${planId}/stages/${stageId}/progress`, {
-      method: 'GET',
-      headers: {
-        'Authorization': `Bearer ${token}`
+    const response = await fetch(
+      `${API_BASE_URL}/quit-plans/${planId}/stages/${stageId}/progress`,
+      {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
       }
-    });
+    );
 
     if (!response.ok) {
       throw await safeParseJSON(response);
@@ -238,16 +286,25 @@ export const getProgressByStage = async (planId, stageId, token) => {
   }
 };
 
-export const recordSmokingStatus = async (planId, stageId, statusData, token) => {
+// Smoking Status APIs
+export const recordSmokingStatus = async (
+  planId,
+  stageId,
+  statusData,
+  token
+) => {
   try {
-    const response = await fetch(`${API_BASE_URL}/quit-plans/${planId}/stages/${stageId}/smoking-status`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-      },
-      body: JSON.stringify(statusData)
-    });
+    const response = await fetch(
+      `${API_BASE_URL}/quit-plans/${planId}/stages/${stageId}/status`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(statusData),
+      }
+    );
 
     if (!response.ok) {
       throw await safeParseJSON(response);
@@ -260,11 +317,113 @@ export const recordSmokingStatus = async (planId, stageId, statusData, token) =>
 
 export const getSmokingStatus = async (planId, stageId, token) => {
   try {
-    const response = await fetch(`${API_BASE_URL}/quit-plans/${planId}/stages/${stageId}/smoking-status`, {
-      method: 'GET',
-      headers: {
-        'Authorization': `Bearer ${token}`
+    const response = await fetch(
+      `${API_BASE_URL}/quit-plans/${planId}/stages/${stageId}/status`,
+      {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
       }
+    );
+
+    if (!response.ok) {
+      throw await safeParseJSON(response);
+    }
+    return await safeParseJSON(response);
+  } catch (error) {
+    throw error;
+  }
+};
+
+// Pre-plan smoking status APIs
+export const recordInitialSmokingStatus = async (statusData, token) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/smoking-status/pre-plan`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(statusData),
+    });
+
+    if (!response.ok) {
+      throw await safeParseJSON(response);
+    }
+    return await safeParseJSON(response);
+  } catch (error) {
+    throw error;
+  }
+};
+
+export const getLatestPrePlanStatus = async (token) => {
+  try {
+    const response = await fetch(
+      `${API_BASE_URL}/smoking-status/pre-plan/latest`,
+      {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+
+    if (!response.ok) {
+      throw await safeParseJSON(response);
+    }
+    return await safeParseJSON(response);
+  } catch (error) {
+    throw error;
+  }
+};
+
+// Goal draft APIs
+export const saveGoalDraft = async (goal, token) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/quit-goal-draft`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ goal }),
+    });
+
+    if (!response.ok) {
+      throw await safeParseJSON(response);
+    }
+    return await safeParseJSON(response);
+  } catch (error) {
+    throw error;
+  }
+};
+
+export const getGoalDraft = async (token) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/quit-goal-draft`, {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    if (!response.ok) {
+      throw await safeParseJSON(response);
+    }
+    return await safeParseJSON(response);
+  } catch (error) {
+    throw error;
+  }
+};
+
+export const deleteGoalDraft = async (token) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/quit-goal-draft`, {
+      method: "DELETE",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
     });
 
     if (!response.ok) {
@@ -281,7 +440,7 @@ export const fetchQuitPlan = async (userId, token) => {
   try {
     const headers = {};
     if (token) {
-      headers['Authorization'] = `Bearer ${token}`;
+      headers["Authorization"] = `Bearer ${token}`;
     }
 
     const response = await fetch(`${API_BASE_URL}/quit-plans/user/${userId}`, {
@@ -294,33 +453,10 @@ export const fetchQuitPlan = async (userId, token) => {
     const plans = await response.json();
 
     // Find the active (ongoing) plan
-    const activePlan = plans.find(plan => plan.status === 'ongoing');
+    const activePlan = plans.find((plan) => plan.status === "ongoing");
     return activePlan || null; // Return the active plan or null
   } catch (error) {
     console.error(`Error fetching quit plan for user ${userId}:`, error);
     handleApiError(error);
   }
 };
-
-export const createSmokingStatus = async (planId, stageId, data) => {
-  try {
-    const endpoint = ENDPOINTS.SMOKINGSTATUS.RECORD_SMOKING
-      .replace(':planId', planId)
-      .replace(':stageId', stageId);
-
-    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(data),
-    });
-    if (!response.ok) {
-      throw new Error('Failed to create smoking status');
-    }
-    return await response.json();
-  } catch (error) {
-    console.error('Error creating smoking status:', error);
-    handleApiError(error);
-  }
-}; 

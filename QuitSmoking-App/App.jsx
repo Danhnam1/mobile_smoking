@@ -13,6 +13,7 @@ import Community from "./src/screens/Community";
 import WelcomeScreen from "./src/screens/WelcomScreen";
 import { createStackNavigator } from "@react-navigation/stack";
 import SmokingStatus from "./src/screens/SmokingStatus";
+import GoalScreen from "./src/screens/GoalScreen";
 import LoginScreen from "./src/screens/LoginScreen";
 import RegisterScreen from "./src/screens/RegisterScreen";
 import UserDetailScreen from "./src/screens/UserDetailScreen";
@@ -205,6 +206,7 @@ function Navigation() {
       <Stack.Screen name="ProfileScreen" component={ProfileScreen} />
       <Stack.Screen name="UserDetailScreen" component={UserDetailScreen} />
       <Stack.Screen name="SmokingStatus" component={SmokingStatus} />
+      <Stack.Screen name="GoalScreen" component={GoalScreen} />
       <Stack.Screen name="ProgressSummary" component={ProgressSummary} />
       <Stack.Screen
         name="MembershipPackage"
@@ -233,7 +235,11 @@ function Navigation() {
       <Stack.Screen name="Help" component={Help} />
       <Stack.Screen name="TermOfUse" component={TermOfUse} />
       <Stack.Screen name="CoachUserDetail" component={CoachUserDetail} />
-      <Stack.Screen name="ProfileCoachScreen" component={ProfileCoachScreen} options={{ title: 'Thông tin Coach' }}/>
+      <Stack.Screen
+        name="ProfileCoachScreen"
+        component={ProfileCoachScreen}
+        options={{ title: "Thông tin Coach" }}
+      />
     </Stack.Navigator>
   );
 }

@@ -125,7 +125,7 @@ const ProfileScreen = ({ navigation }) => {
             <View style={styles.cardHeaderWithEdit}>
               <Text style={styles.cardTitle}>Tình trạng hút thuốc</Text>
               <TouchableOpacity
-                onPress={() => navigation.navigate("SmokingStatus")}
+                onPress={() => navigation.navigate("GoalScreen")}
               >
                 <MaterialCommunityIcons
                   name="pencil-outline"

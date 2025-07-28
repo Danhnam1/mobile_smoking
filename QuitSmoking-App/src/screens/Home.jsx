@@ -45,6 +45,22 @@ export default function Home() {
 
   const { user, token, membershipStatus } = useAuth();
 
+  // Handle navigation from QuitStage when plan failed
+  useFocusEffect(
+    useCallback(() => {
+      const params = navigation
+        .getState()
+        ?.routes?.find((route) => route.name === "Home")?.params;
+
+      if (params?.createNewPlan) {
+        // Clear the param to prevent re-triggering
+        navigation.setParams({ createNewPlan: undefined });
+        // Navigate to create new plan
+        handlePressQuitPlan();
+      }
+    }, [navigation])
+  );
+
   const loadData = useCallback(async () => {
     try {
       // // Fetch achievements first (usually not dependent on login status)
@@ -136,6 +152,7 @@ export default function Home() {
 
   const handlePressQuitPlan = async () => {
     try {
+      // Kiểm tra xem user đã có smoking status chưa
       const smokingStatus = await fetchSmokingStatus(token);
       console.log("smokingStatus:", smokingStatus);
 
@@ -145,17 +162,21 @@ export default function Home() {
         !smokingStatus.cigarette_count || // hoặc trường quan trọng khác
         smokingStatus.cigarette_count === 0
       ) {
-        navigation.navigate("SmokingStatus");
+        navigation.navigate("GoalScreen", { fromQuitPlan: true });
       } else {
+        // Nếu đã có smoking status, kiểm tra xem có quit plan chưa
         const plan = await fetchQuitPlan(user._id, token);
         if (plan) {
+          // Nếu đã có plan, chuyển đến chi tiết plan
           navigation.navigate("QuitPlanDetailScreen", { planId: plan._id });
         } else {
+          // Nếu chưa có plan, chuyển đến tạo plan mới
           navigation.navigate("QuitPlanScreen");
         }
       }
     } catch (error) {
-      navigation.navigate("SmokingStatus");
+      console.error("Error checking quit plan status:", error);
+      navigation.navigate("GoalScreen", { fromQuitPlan: true });
     }
   };
 
