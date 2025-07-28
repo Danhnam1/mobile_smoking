@@ -419,7 +419,6 @@ const MembershipPackageScreen = ({ navigation, route }) => {
             <Text style={styles.termsText}>
               Bằng cách tiếp tục, bạn đồng ý với{" "}
               <Text style={styles.linkText}>Điều khoản dịch vụ</Text>
-              {"."}
             </Text>
           </View>
         </View>

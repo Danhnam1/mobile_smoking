@@ -250,35 +250,7 @@ const QuitStage = ({ navigation, route }) => {
         Alert.alert("Success", "Progress recorded successfully!");
         setCigarettesToday("");
         setRecordedToday((prev) => ({ ...prev, [stageId]: true }));
-
-        // 🔄 Refresh data để check completion
-        await fetchStagesAndSummary();
-
-        // 🎉 Check if plan completed
-        if (summaryData && summaryData.completion_rate >= 100) {
-          Alert.alert(
-            "🎉 Congratulations!",
-            "You have successfully completed your quit plan!",
-            [
-              {
-                text: "View Summary",
-                onPress: () => {
-                  // Navigate to completion screen or show summary
-                  navigation.navigate("ProgressSummary", {
-                    planId: currentPlanId,
-                  });
-                },
-              },
-              {
-                text: "Back to Home",
-                onPress: () => {
-                  setCurrentPlanId(null);
-                  navigation.navigate("Home");
-                },
-              },
-            ]
-          );
-        }
+        fetchStagesAndSummary();
       }
     } catch (error) {
       console.error("Error recording progress:", error);
@@ -382,17 +354,6 @@ const QuitStage = ({ navigation, route }) => {
         {summaryData && (
           <View style={styles.summaryContainer}>
             <Text style={styles.summaryTitle}>Plan Summary</Text>
-
-            {/* 🎉 Completion Banner */}
-            {summaryData.completion_rate >= 100 && (
-              <View style={styles.completionBanner}>
-                <Ionicons name="trophy" size={24} color="#FFD700" />
-                <Text style={styles.completionText}>
-                  🎉 Congratulations! Plan Completed! 🎉
-                </Text>
-              </View>
-            )}
-
             <View style={styles.summaryGrid}>
               <View style={styles.summaryItem}>
                 <Text style={styles.summaryLabel}>Goal</Text>
@@ -412,12 +373,7 @@ const QuitStage = ({ navigation, route }) => {
               </View>
               <View style={styles.summaryItem}>
                 <Text style={styles.summaryLabel}>Completion Rate</Text>
-                <Text
-                  style={[
-                    styles.summaryValue,
-                    summaryData.completion_rate >= 100 && styles.completedValue,
-                  ]}
-                >
+                <Text style={styles.summaryValue}>
                   {summaryData.completion_rate}%
                 </Text>
               </View>
@@ -457,90 +413,87 @@ const QuitStage = ({ navigation, route }) => {
 
               <Text style={styles.stageDescription}>{stage.description}</Text>
 
-              {stage.status === "in_progress" &&
-                !recordedToday[stage._id] &&
-                summaryData?.completion_rate < 100 && (
-                  <View style={styles.recordSection}>
-                    <Text style={styles.recordLabel}>
-                      Record today's progress:
+              {stage.status === "in_progress" && !recordedToday[stage._id] && (
+                <View style={styles.recordSection}>
+                  <Text style={styles.recordLabel}>
+                    Record today's progress:
+                  </Text>
+                  {stage.max_daily_cigarette && (
+                    <Text style={styles.maxCigarettesInfo}>
+                      Target: Max {stage.max_daily_cigarette} cigarettes per day
                     </Text>
-                    {stage.max_daily_cigarette && (
-                      <Text style={styles.maxCigarettesInfo}>
-                        Target: Max {stage.max_daily_cigarette} cigarettes per
-                        day
-                      </Text>
-                    )}
+                  )}
 
-                    {/* ⚠️ Warning about 3-day rule */}
-                    <View style={styles.warningContainer}>
-                      <Ionicons name="warning" size={16} color="#FF6B35" />
-                      <Text style={styles.warningText}>
-                        ⚠️ Exceeding the limit for 3 consecutive days will
-                        cancel this stage
-                      </Text>
-                    </View>
-
-                    {/* Show exceeded days count */}
-                    {exceededDays[stage._id] > 0 && (
-                      <View
-                        style={[
-                          styles.exceededContainer,
-                          exceededDays[stage._id] >= 2 && styles.exceededDanger,
-                        ]}
-                      >
-                        <Ionicons
-                          name={
-                            exceededDays[stage._id] >= 2
-                              ? "alert-circle"
-                              : "information-circle"
-                          }
-                          size={16}
-                          color={
-                            exceededDays[stage._id] >= 2 ? "#D32F2F" : "#FF6B35"
-                          }
-                        />
-                        <Text
-                          style={[
-                            styles.exceededText,
-                            exceededDays[stage._id] >= 2 &&
-                              styles.exceededTextDanger,
-                          ]}
-                        >
-                          {exceededDays[stage._id] === 1
-                            ? "⚠️ 1 day exceeded limit"
-                            : exceededDays[stage._id] === 2
-                            ? "🚨 2 days exceeded limit - 1 more day will cancel stage!"
-                            : "💥 3 days exceeded limit - Stage will be cancelled!"}
-                        </Text>
-                      </View>
-                    )}
-
-                    <View style={styles.inputContainer}>
-                      <TextInput
-                        style={styles.input}
-                        placeholder="Number of cigarettes"
-                        value={cigarettesToday}
-                        onChangeText={setCigarettesToday}
-                        keyboardType="numeric"
-                      />
-                      <TouchableOpacity
-                        style={[
-                          styles.recordButton,
-                          recordingStage === stage._id &&
-                            styles.recordButtonDisabled,
-                        ]}
-                        onPress={() => handleRecordProgress(stage._id)}
-                        disabled={recordingStage === stage._id}
-                      >
-                        {recordingStage === stage._id ? (
-                          <ActivityIndicator size="small" color="#fff" />
-                        ) : (
-                          <Text style={styles.recordButtonText}>Record</Text>
-                        )}
-                      </TouchableOpacity>
-                    </View>
+                  {/* ⚠️ Warning about 3-day rule */}
+                  <View style={styles.warningContainer}>
+                    <Ionicons name="warning" size={16} color="#FF6B35" />
+                    <Text style={styles.warningText}>
+                      ⚠️ Exceeding the limit for 3 consecutive days will cancel
+                      this stage
+                    </Text>
                   </View>
-                )}
+
+                  {/* Show exceeded days count */}
+                  {exceededDays[stage._id] > 0 && (
+                    <View
+                      style={[
+                        styles.exceededContainer,
+                        exceededDays[stage._id] >= 2 && styles.exceededDanger,
+                      ]}
+                    >
+                      <Ionicons
+                        name={
+                          exceededDays[stage._id] >= 2
+                            ? "alert-circle"
+                            : "information-circle"
+                        }
+                        size={16}
+                        color={
+                          exceededDays[stage._id] >= 2 ? "#D32F2F" : "#FF6B35"
+                        }
+                      />
+                      <Text
+                        style={[
+                          styles.exceededText,
+                          exceededDays[stage._id] >= 2 &&
+                            styles.exceededTextDanger,
+                        ]}
+                      >
+                        {exceededDays[stage._id] === 1
+                          ? "⚠️ 1 day exceeded limit"
+                          : exceededDays[stage._id] === 2
+                          ? "🚨 2 days exceeded limit - 1 more day will cancel stage!"
+                          : "💥 3 days exceeded limit - Stage will be cancelled!"}
+                      </Text>
+                    </View>
+                  )}
+
+                  <View style={styles.inputContainer}>
+                    <TextInput
+                      style={styles.input}
+                      placeholder="Number of cigarettes"
+                      value={cigarettesToday}
+                      onChangeText={setCigarettesToday}
+                      keyboardType="numeric"
+                    />
+                    <TouchableOpacity
+                      style={[
+                        styles.recordButton,
+                        recordingStage === stage._id &&
+                          styles.recordButtonDisabled,
+                      ]}
+                      onPress={() => handleRecordProgress(stage._id)}
+                      disabled={recordingStage === stage._id}
+                    >
+                      {recordingStage === stage._id ? (
+                        <ActivityIndicator size="small" color="#fff" />
+                      ) : (
+                        <Text style={styles.recordButtonText}>Record</Text>
+                      )}
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              )}
 
               {recordedToday[stage._id] && (
                 <View style={styles.recordedIndicator}>
@@ -827,28 +780,6 @@ const styles = StyleSheet.create({
   },
   exceededTextDanger: {
     color: "#D32F2F",
-  },
-  completionBanner: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "#E8F5E8",
-    padding: 16,
-    borderRadius: 12,
-    marginBottom: 20,
-    borderWidth: 2,
-    borderColor: "#4CAF50",
-  },
-  completionText: {
-    marginLeft: 8,
-    fontSize: 16,
-    fontWeight: "700",
-    color: "#2E7D32",
-    textAlign: "center",
-  },
-  completedValue: {
-    color: "#4CAF50",
-    fontWeight: "800",
   },
 
   loadingContainer: {

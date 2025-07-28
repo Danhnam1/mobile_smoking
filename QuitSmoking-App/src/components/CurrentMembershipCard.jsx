@@ -4,7 +4,6 @@ import { Ionicons } from "@expo/vector-icons";
 
 const CurrentMembershipCard = ({
   currentMembership,
-  onCancelMembership,
   onUpgradeMembership,
   packages,
 }) => {
@@ -55,23 +54,6 @@ const CurrentMembershipCard = ({
       </View>
 
       <View style={styles.actions}>
-        <TouchableOpacity
-          style={styles.cancelButton}
-          onPress={() => {
-            Alert.alert("Hủy gói", "Bạn có chắc muốn hủy gói hiện tại?", [
-              { text: "Không", style: "cancel" },
-              {
-                text: "Có, hủy gói",
-                style: "destructive",
-                onPress: onCancelMembership,
-              },
-            ]);
-          }}
-        >
-          <Ionicons name="close-circle" size={20} color="#fff" />
-          <Text style={styles.cancelButtonText}>Hủy gói</Text>
-        </TouchableOpacity>
-
         {upgradeOptions.length > 0 && (
           <TouchableOpacity
             style={styles.upgradeButton}
@@ -158,22 +140,6 @@ const styles = StyleSheet.create({
   actions: {
     flexDirection: "row",
     gap: 10,
-  },
-  cancelButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#FF6B6B",
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 8,
-    flex: 1,
-    justifyContent: "center",
-    gap: 6,
-  },
-  cancelButtonText: {
-    color: "#fff",
-    fontSize: 14,
-    fontWeight: "600",
   },
   upgradeButton: {
     flexDirection: "row",

@@ -111,7 +111,7 @@ const CheckoutScreen = () => {
   };
 
   const viewTransactions = () => {
-    navigation.navigate("Transactions");
+    navigation.navigate("TransactionsScreen");
   };
 
   // Render different content based on the payment status
